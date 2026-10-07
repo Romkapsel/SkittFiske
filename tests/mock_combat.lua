@@ -54,6 +54,6 @@ check(not NAMED.SkittFiskeWindow.shown, "skjult etter kampen")
 -- Krysset i vinduet avslutter som makroen
 check(NS.active, "fisker fortsatt (vinduet var bare skjult)")
 for _, f in ipairs(ALLFRAMES) do
-  if f.template == "UIPanelCloseButton" and f.parent == NAMED.SkittFiskeWindow then RunScript(f, "OnClick") end
+  if f.label and f.label.text == "X" and f.parent == NAMED.SkittFiskeWindow then RunScript(f, "OnClick") end
 end
 check(not NS.active and not NAMED.SkittFiskeWindow.shown, "krysset avslutter fiskingen")

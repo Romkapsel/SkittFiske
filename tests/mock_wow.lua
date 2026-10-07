@@ -62,7 +62,10 @@ local function frame(name, kind)
   function f:GetAttribute(k) return self.attrs[k] end
   function f:RegisterForClicks(...) self.clicks = { ... } end
   function f:CreateTexture() return frame(nil, "Texture") end
-  function f:CreateFontString() return frame(nil, "FontString") end
+  function f:CreateFontString(_, _, template)
+    if template then error("fontmal i CreateFontString: " .. template) end
+    return frame(nil, "FontString")
+  end
   function f:SetText(t) self.text = t end
   function f:GetText() return self.text end
   function f:SetTexture(t) self.texture = t end
@@ -75,6 +78,7 @@ local function frame(name, kind)
   function f:SetHeight(h) self.height = h end
   function f:SetSize(w, h) self.width, self.height = w, h end
   function f:CreateAnimationGroup()
+    if T.failAnim then error("CreateAnimationGroup feilet") end
     local g = frame(nil, "AnimationGroup")
     g.playing = false
     function g:Play() self.playing = true end
@@ -108,7 +112,10 @@ end
 T.casts, T.macroRuns = {}, {}
 
 NAMED, ALLFRAMES = {}, {}
+-- Bare maler vi vet finnes i Forever (7. okt: vinduet stoppet halvveis med spillets eldre maler)
+KNOWN_TEMPLATES = { SecureActionButtonTemplate = true, GameTooltipTemplate = true }
 function CreateFrame(kind, name, parent, template)
+  if template and not KNOWN_TEMPLATES[template] then error("ukjent mal i Forever: " .. template) end
   local f = frame(name, kind)
   table.insert(ALLFRAMES, f)
   f.template = template

@@ -86,7 +86,7 @@ end
 
 on.PLAYER_LOGIN = function()
   ns.Cast.Init()
-  ns.Window.Create(cdb)
+  ns.Safe("vindu", function() ns.Window.Create(cdb) end)
   if not db.macroMade then
     if ensureMacro(true) then db.macroMade = true end
   end

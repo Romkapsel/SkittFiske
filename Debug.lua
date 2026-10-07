@@ -30,6 +30,19 @@ function D.Error(msg)
   while #d.errors > 10 do table.remove(d.errors) end
 end
 
+-- Noe i vinduet eller rapporten som spillet nektet: lagres og vises én gang i chatten
+function D.Ui(label, err)
+  local d = store()
+  local msg = tostring(label) .. ": " .. tostring(err)
+  if d then
+    d.ui = d.ui or {}
+    for _, m in ipairs(d.ui) do if m == msg then return end end
+    table.insert(d.ui, 1, msg)
+    while #d.ui > 10 do table.remove(d.ui) end
+  end
+  ns.Print("|cffff6060" .. msg .. "|r")
+end
+
 function D.Loot(fishing)
   local d = store()
   if not d then return end
@@ -83,6 +96,7 @@ function D.Show()
   local l = d.loot[1]
   if l then ns.Print(("siste loot: fiske=%s · %s"):format(l.fishing, table.concat(l.items, ", "))) end
   if d.errors[1] then ns.Print("siste feilmelding: " .. d.errors[1]) end
+  if d.ui and d.ui[1] then ns.Print("vinduet: " .. d.ui[1]) end
 end
 
 function D.Clear()

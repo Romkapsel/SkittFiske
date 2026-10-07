@@ -9,29 +9,23 @@ local f, sub, pageFs, prevBtn, nextBtn
 local pool = {}
 local page = 1
 
-local BACKDROP = {
-  bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-  tile = true, tileSize = 16, edgeSize = 16,
-  insets = { left = 4, right = 4, top = 4, bottom = 4 },
-}
-
 local function row(i)
   local r = pool[i]
   if r then return r end
   r = {}
   r.icon = f:CreateTexture(nil, "ARTWORK")
   r.icon:SetSize(16, 16)
-  r.left = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  r.left = ns.Text(f, "GameFontNormalSmall", 1, 1, 1)
   r.left:SetJustifyH("LEFT")
-  r.right = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  r.right = ns.Text(f, "GameFontNormalSmall", 1, 1, 1)
   r.right:SetJustifyH("RIGHT")
   pool[i] = r
   return r
 end
 
 local function create()
-  f = CreateFrame("Frame", "SkittFiskeReport", UIParent, "BackdropTemplate")
+  f = CreateFrame("Frame", "SkittFiskeReport", UIParent)
+  f:Hide()
   f:SetSize(WIDTH, 200)
   f:SetPoint("CENTER", UIParent, "CENTER", 0, 80)
   f:SetFrameStrata("DIALOG")
@@ -41,40 +35,24 @@ local function create()
   f:RegisterForDrag("LeftButton")
   f:SetScript("OnDragStart", f.StartMoving)
   f:SetScript("OnDragStop", f.StopMovingOrSizing)
-  if f.SetBackdrop then
-    f:SetBackdrop(BACKDROP)
-    f:SetBackdropColor(0.04, 0.09, 0.13, 0.95)
-    f:SetBackdropBorderColor(0.31, 0.7, 0.85, 0.9)
-  end
+  ns.Background(f, 0.95)
   if UISpecialFrames then table.insert(UISpecialFrames, "SkittFiskeReport") end -- Esc lukker
 
-  local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  local title = ns.Text(f, "GameFontNormalLarge", 0.31, 0.7, 0.85)
   title:SetPoint("TOPLEFT", 12, -10)
   title:SetText(L.REPORT_TITLE)
-  title:SetTextColor(0.31, 0.7, 0.85)
-  sub = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  sub = ns.Text(f, "GameFontNormalSmall", 0.55, 0.55, 0.55)
   sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -3)
 
-  local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
-  close:SetPoint("TOPRIGHT", 0, 0)
+  ns.CloseButton(f, function() f:Hide() end)
 
-  local done = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-  done:SetSize(80, 22)
+  local done = ns.TextButton(f, L.REPORT_CLOSE, 80, function() f:Hide() end)
   done:SetPoint("BOTTOMRIGHT", -10, 10)
-  done:SetText(L.REPORT_CLOSE)
-  done:SetScript("OnClick", function() f:Hide() end)
-
-  prevBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-  prevBtn:SetSize(26, 22)
+  prevBtn = ns.TextButton(f, "<", 26, function() R.Show(page + 1) end)
   prevBtn:SetPoint("BOTTOMLEFT", 10, 10)
-  prevBtn:SetText("<")
-  prevBtn:SetScript("OnClick", function() R.Show(page + 1) end)
-  nextBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-  nextBtn:SetSize(26, 22)
+  nextBtn = ns.TextButton(f, ">", 26, function() R.Show(page - 1) end)
   nextBtn:SetPoint("LEFT", prevBtn, "RIGHT", 4, 0)
-  nextBtn:SetText(">")
-  nextBtn:SetScript("OnClick", function() R.Show(page - 1) end)
-  pageFs = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  pageFs = ns.Text(f, "GameFontNormalSmall", 0.55, 0.55, 0.55)
   pageFs:SetPoint("LEFT", nextBtn, "RIGHT", 8, 0)
 end
 
@@ -114,7 +92,11 @@ end
 function R.Show(p)
   local list = ns.db and ns.db.history or {}
   if #list == 0 then ns.Print(L.NO_REPORT) return end
-  if not f then create() end
+  if not f and not ns.Safe("rapport", create) then
+    if f then f:Hide() end
+    f = nil
+    return
+  end
   page = math.max(1, math.min(p or 1, #list))
   local r = list[page]
   local when = date and date("%d.%m %H:%M", r.started) or ""
