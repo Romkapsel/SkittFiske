@@ -25,8 +25,8 @@ LAYOUT = {
     "caught": 204, "bar": 228, "barw": 168, "stats": 258,
     "rows": 312, "row_step": 23,
     "hint": 388,
-    "buttons": (650, 726), "button_y": 436, "button_w": 74, "button_h": 24,
-    "close": (771, 85, 22),
+    "buttons": (648, 724), "button_y": 433, "button_w": 60, "button_h": 30,
+    "close": (752, 83, 48, 24),
 }
 INK = (70, 44, 22)
 HEAD = (110, 46, 18)
@@ -251,10 +251,12 @@ def preview():
             d.rectangle([P(R + 4, y + 2), (P(R + 4, y)[0] + 14, P(R + 4, y)[1] + 16)], fill=(120, 140, 160))
         d.text(P(R + 24, y), t, font=small, fill=INK if i < 2 else (120, 96, 70))
     ctext(536, L["hint"], "Dobbelt høyreklikk: kast", small, (120, 96, 70))
-    for x, t in zip(L["buttons"], ("Rapport", "Ferdig")):
-        ctext(x + L["button_w"] / 2, L["button_y"] + 3, t, bold, (236, 220, 180))
-    cx, cy, cs = L["close"]
-    ctext(cx + cs / 2, cy + 2, "X", bold, (236, 220, 180))
+    for x, name in zip(L["buttons"], ("report", "ok")):
+        b = Image.open(os.path.join(OUT, "btn_" + name + ".tga")).convert("RGBA").resize((L["button_w"], L["button_h"]))
+        img.alpha_composite(b, tuple(int(v) for v in P(x, L["button_y"])))
+    cx, cy, cw, ch = L["close"]
+    b = Image.open(os.path.join(OUT, "btn_close.tga")).convert("RGBA").resize((cw, ch))
+    img.alpha_composite(b, tuple(int(v) for v in P(cx, cy)))
     path = os.path.join(ROOT, "docs", "vindu-forhandsvisning.png")
     img.convert("RGB").save(path)
     return path

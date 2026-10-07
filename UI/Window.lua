@@ -36,31 +36,29 @@ function ns.Text(parent, font, color, size, path, shadow)
   return fs
 end
 
--- Knapp som bare er tekst (på treplata i rammen), med lys når musa er over
-function ns.PlateButton(parent, text, w, h, onClick, size)
+-- Daniels røde knapper (art/knapper.png → Media/btn_*.tga): bare symbol, teksten står i tooltipen
+function ns.IconButton(parent, name, w, h, tip, onClick)
   local b = CreateFrame("Button", nil, parent)
   b:SetSize(w, h)
+  b.iconName = name
+  b.tex = b:CreateTexture(nil, "ARTWORK")
+  b.tex:SetAllPoints()
+  b.tex:SetTexture(M .. "btn_" .. name .. ".tga")
   local hl = b:CreateTexture(nil, "HIGHLIGHT")
   hl:SetAllPoints()
-  hl:SetColorTexture(1, 0.9, 0.6, 0.15)
-  b.label = ns.Text(b, "GameFontNormal", PLATE, size or 12, nil, true)
-  b.label:SetPoint("CENTER", 0, 0)
-  b.label:SetText(text)
+  hl:SetTexture(M .. "btn_" .. name .. ".tga")
+  hl:SetBlendMode("ADD")
+  hl:SetAlpha(0.3)
   b:RegisterForClicks("LeftButtonUp")
   b:SetScript("OnClick", onClick)
-  return b
-end
-
--- Knapp av mørkt tre (rapporten)
-function ns.WoodButton(parent, text, w, h, onClick)
-  local b = ns.PlateButton(parent, text, w, h, onClick, 11)
-  local bg = b:CreateTexture(nil, "BACKGROUND")
-  bg:SetAllPoints()
-  bg:SetColorTexture(0.24, 0.16, 0.1, 1)
-  local edge = b:CreateTexture(nil, "BORDER")
-  edge:SetPoint("TOPLEFT", -1, 1)
-  edge:SetPoint("BOTTOMRIGHT", 1, -1)
-  edge:SetColorTexture(0.12, 0.08, 0.05, 1)
+  b:SetScript("OnMouseDown", function(self) self.tex:SetVertexColor(0.75, 0.75, 0.75) end)
+  b:SetScript("OnMouseUp", function(self) self.tex:SetVertexColor(1, 1, 1) end)
+  b:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText(tip, 1, 1, 1)
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function() GameTooltip:Hide() end)
   return b
 end
 
@@ -78,8 +76,8 @@ local LAYOUT = {
   caught = 204, bar = 228, barw = 168, stats = 258,
   rows = 312, rowStep = 23,
   hint = 388,
-  buttons = { 650, 726 }, buttonY = 436, buttonW = 74, buttonH = 24,
-  close = { 771, 85, 22 },
+  buttons = { 648, 724 }, buttonY = 433, buttonW = 60, buttonH = 30,
+  close = { 752, 83, 48, 24 },
 }
 local S = 0.8 -- enheter per piksel i frame.tga
 local CROP_W = LAYOUT.crop[2] - LAYOUT.crop[1]
@@ -216,7 +214,7 @@ function W.Create(cdb)
   line:SetPoint("TOP", f, "TOPLEFT", X(TITLE_X), -px(LAYOUT.divider))
 
   local c = LAYOUT.close
-  at(ns.PlateButton(f, "X", px(c[3]), px(c[3]), function() ns.Stop() end, 12), c[1], c[2]) -- vinduet åpent = du fisker
+  at(ns.IconButton(f, "close", px(c[3]), px(c[4]), L.BTN_DONE, function() ns.Stop() end), c[1], c[2]) -- vinduet åpent = du fisker
 
   -- Venstre: Klar og Agn
   local midL = LAYOUT.left + LAYOUT.colw / 2
@@ -287,8 +285,8 @@ function W.Create(cdb)
   end)
   hintHit:SetScript("OnLeave", hideTip)
   local bw, bh = px(LAYOUT.buttonW), px(LAYOUT.buttonH)
-  at(ns.PlateButton(f, L.BTN_REPORT, bw, bh, function() ns.Report.Show(1) end), LAYOUT.buttons[1], LAYOUT.buttonY)
-  at(ns.PlateButton(f, L.BTN_DONE, bw, bh, function() ns.Stop() end), LAYOUT.buttons[2], LAYOUT.buttonY)
+  at(ns.IconButton(f, "report", bw, bh, L.BTN_REPORT, function() ns.Report.Show(1) end), LAYOUT.buttons[1], LAYOUT.buttonY)
+  at(ns.IconButton(f, "ok", bw, bh, L.BTN_DONE, function() ns.Stop() end), LAYOUT.buttons[2], LAYOUT.buttonY)
 
   -- Lys som pulserer når noe mangler (agn-ringene og krysset ved Agn)
   ns.Safe("glow", function()

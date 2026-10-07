@@ -48,7 +48,7 @@ ns.L = {
   MORE = "+ %d til",
   BAR = "Fiske %d/%d",
   BTN_REPORT = "Rapport",
-  BTN_DONE = "Ferdig",
+  BTN_DONE = "Ferdig – avslutt fiskingen",
   SIZE_TIP = "Shift + rull: større eller mindre",
 
   -- Rapporten
@@ -69,6 +69,8 @@ ns.L = {
   REPORT_SOURCE_VENDOR = "Verdi: det vendoren betaler.",
   REPORT_PAGE = "%d av %d",
   REPORT_CLOSE = "Lukk",
+  REPORT_OLDER = "Eldre fangst",
+  REPORT_NEWER = "Nyere fangst",
   REPORT_ESCAPED_HINT = "Mange slapp unna: fiskeskillen er for lav for dette vannet.",
 
   -- Tid og penger
