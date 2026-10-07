@@ -42,5 +42,6 @@
 
 | Dato | Hva | Hvem |
 |---|---|---|
+| 2026-10-07 | Nytt utseende etter Daniels forbilde («Fiske Assistent»): fisk av treverk med vann i midten (`Media/frame.tga`, tegnet av `tools/render_media.py`), grønne skilt (Klar, Agn, Fiske, Fangst), runde agn-ringer (hvert agn i baggen er én ring – klikk setter det på), skill-stolpe, røde knapper Rapport/Ferdig. «Daglige oppdrag» ble Klar-lista: Stang, Agn, Lyd (kryss pulserer når agnet mangler). Rapporten: treplate i 9 deler. Shift + rull endrer størrelsen. Forhåndsvisning: `docs/vindu-forhandsvisning.png`. | Daniel / Claude |
 | 2026-10-07 | Første test (Tannan, Forever): vinduet stoppet halvveis i `W.Create` (mellom agnknappen og teksten ved siden av; første feilmelding ikke sett), og alt etterpå feilet på nil. Rettet: ingen spillmaler (BackdropTemplate, UIPanelCloseButton, UIPanelButtonTemplate, highlight-tekstur) og bare fontene Control bruker; pynt går gjennom `ns.Safe` og skrives i `debug.ui` + chat; vinduet er skjult til det er ferdig bygget (`f.ready`). Testene nekter nå ukjente maler. | Daniel / Claude |
 | 2026-10-07 | v0.1.0 bygget: makro, utstyr, lyd, dobbeltklikk-kast, agnknapp, fangsttelling, rapport, debug. 208 tester. | Daniel / Claude |
