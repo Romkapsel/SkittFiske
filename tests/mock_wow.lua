@@ -62,6 +62,7 @@ local function frame(name, kind)
   function f:GetAttribute(k) return self.attrs[k] end
   function f:RegisterForClicks(...) self.clicks = { ... } end
   function f:CreateTexture() return frame(nil, "Texture") end
+  function f:CreateMaskTexture() return frame(nil, "Mask") end
   function f:CreateFontString(_, _, template)
     if template then error("fontmal i CreateFontString: " .. template) end
     return frame(nil, "FontString")

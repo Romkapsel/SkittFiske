@@ -91,9 +91,10 @@ check(s.escaped == 1 and s.missed == 1, "slapp unna og for tidlig telles")
 
 -- Agn: hvert agn i baggen får sin egen ring; klikk = agnet på stanga
 local rings = NS.Window.Rings()
-check(#rings == 4, "fire agn-ringer")
+check(#rings == 3, "tre agn-ringer")
 check(rings[1].secure and rings[1].clicks[1] == "AnyDown" and #rings[1].clicks == 1, "ringene klikkes bare én gang (AnyDown)")
-check(rings[1].shown and rings[2].shown and rings[3].shown and not rings[4].shown, "tre agn vises")
+check(rings[1].shown and rings[2].shown and rings[3].shown, "tre agn vises")
+check(not Chat("|cffff6060"), "ingen røde feil fra vinduet")
 check(rings[1].attrs.macrotext == "/use item:6530\n/use 16", "beste agn først, på stanga")
 check(rings[3].attrs.macrotext == "/use item:999001\n/use 16", "nytt Forever-agn funnet via tooltipen")
 Click(rings[1])

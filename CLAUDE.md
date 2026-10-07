@@ -25,6 +25,13 @@ fiskeutstyret på/av, lyden opp/tilbake, vinduet åpent/lukket, og en fangstrapp
 - UI-tekst på norsk i `Locale/nbNO.lua`. Kode og commit-meldinger på engelsk.
 - `Logic.lua` er ren Lua uten WoW-API.
 
+## Grafikk
+
+Fiskerammen er Daniels eget bilde (`art/fiskeramme.png`). `python tools/cut_frame.py` klipper den ut til `Media/frame.tga`;
+`python tools/render_media.py` tegner de små bildene og `docs/vindu-forhandsvisning.png`. LAYOUT (piksler i frame.tga) står
+både i `tools/render_media.py` og `UI/Window.lua` – endre begge, og se på forhåndsvisningen før du sender det til spillet.
+Teksturer må ha sider i toerpotens (testene sjekker).
+
 ## Kommandoer
 
 ```

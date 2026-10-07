@@ -15,15 +15,15 @@ local function row(i)
   r = {}
   r.icon = f:CreateTexture(nil, "ARTWORK")
   r.icon:SetSize(16, 16)
-  r.left = ns.Text(f, "GameFontNormalSmall", 1, 1, 1, 12)
+  r.left = ns.Text(f, "GameFontNormalSmall", ns.INK, 12)
   r.left:SetJustifyH("LEFT")
-  r.right = ns.Text(f, "GameFontNormalSmall", 1, 1, 1, 12)
+  r.right = ns.Text(f, "GameFontNormalSmall", ns.INK, 12)
   r.right:SetJustifyH("RIGHT")
   pool[i] = r
   return r
 end
 
--- Treplata med vann (Media/panel.tga) i ni deler, så den kan bli så høy som rapporten trenger
+-- Treplata med pergament (Media/panel.tga) i ni deler, så den kan bli så høy som rapporten trenger
 local function panel(frame)
   local C, T = 34, 48 / 256
   local cells = {
@@ -60,21 +60,22 @@ local function create()
   panel(f)
   if UISpecialFrames then table.insert(UISpecialFrames, "SkittFiskeReport") end -- Esc lukker
 
-  local plaque = ns.Plaque(f, L.REPORT_TITLE, 180, 30)
-  plaque:SetPoint("TOP", 0, -14)
-  sub = ns.Text(f, "GameFontNormalSmall", 0.75, 0.84, 0.84, 11)
-  sub:SetPoint("TOP", plaque, "BOTTOM", 0, -4)
+  local title = ns.Text(f, "GameFontNormalLarge", ns.HEAD, 22, ns.FONT_TITLE)
+  title:SetPoint("TOP", 0, -26)
+  title:SetText(L.REPORT_TITLE)
+  sub = ns.Text(f, "GameFontNormalSmall", ns.FADED, 10)
+  sub:SetPoint("TOP", title, "BOTTOM", 0, -3)
 
-  local close = ns.RedButton(f, "X", 18, 18, function() f:Hide() end)
-  close:SetPoint("TOPRIGHT", -12, -12)
+  local close = ns.WoodButton(f, "X", 18, 18, function() f:Hide() end)
+  close:SetPoint("TOPRIGHT", -8, -8)
 
-  local done = ns.RedButton(f, L.REPORT_CLOSE, 80, 24, function() f:Hide() end)
-  done:SetPoint("BOTTOMRIGHT", -24, 18)
-  prevBtn = ns.RedButton(f, "<", 26, 24, function() R.Show(page + 1) end)
-  prevBtn:SetPoint("BOTTOMLEFT", 24, 18)
-  nextBtn = ns.RedButton(f, ">", 26, 24, function() R.Show(page - 1) end)
+  local done = ns.WoodButton(f, L.REPORT_CLOSE, 70, 20, function() f:Hide() end)
+  done:SetPoint("BOTTOMRIGHT", -32, 30)
+  prevBtn = ns.WoodButton(f, "<", 24, 20, function() R.Show(page + 1) end)
+  prevBtn:SetPoint("BOTTOMLEFT", 32, 30)
+  nextBtn = ns.WoodButton(f, ">", 24, 20, function() R.Show(page - 1) end)
   nextBtn:SetPoint("LEFT", prevBtn, "RIGHT", 4, 0)
-  pageFs = ns.Text(f, "GameFontNormalSmall", 0.75, 0.84, 0.84, 11)
+  pageFs = ns.Text(f, "GameFontNormalSmall", ns.FADED, 10)
   pageFs:SetPoint("LEFT", nextBtn, "RIGHT", 8, 0)
 end
 
@@ -85,7 +86,7 @@ function R.Lines(r)
   kv(L.REPORT_TIME, Logic.Duration(r.secs, L))
   kv(L.REPORT_CASTS, tostring(r.casts or 0))
   kv(L.REPORT_CAUGHT, tostring(r.caught or 0))
-  if (r.escaped or 0) > 0 then kv(L.REPORT_ESCAPED, tostring(r.escaped), { 1, 0.5, 0.4 }) end
+  if (r.escaped or 0) > 0 then kv(L.REPORT_ESCAPED, tostring(r.escaped), { 0.62, 0.14, 0.07 }) end
   if (r.missed or 0) > 0 then kv(L.REPORT_MISSED, tostring(r.missed)) end
   if r.skillFrom and r.skillTo then
     kv(L.REPORT_SKILL, L.REPORT_SKILL_VALUE:format(r.skillFrom, r.skillTo, r.skillTo - r.skillFrom))
@@ -101,10 +102,10 @@ function R.Lines(r)
   if (r.money or 0) > 0 then kv(L.REPORT_MONEY, Logic.Coins(r.money)) end
   if (r.total or 0) > 0 then
     out[#out + 1] = { gap = true }
-    kv(L.REPORT_VALUE, Logic.Coins(r.total), { 1, 0.82, 0 })
-    if r.perHour then kv(L.REPORT_PER_HOUR, Logic.Coins(r.perHour), { 1, 0.82, 0 }) end
+    kv(L.REPORT_VALUE, Logic.Coins(r.total), ns.HEAD)
+    if r.perHour then kv(L.REPORT_PER_HOUR, Logic.Coins(r.perHour), ns.HEAD) end
   end
-  if Logic.TooLowSkill(r) then out[#out + 1] = { left = L.REPORT_ESCAPED_HINT, small = true, color = { 1, 0.5, 0.4 } } end
+  if Logic.TooLowSkill(r) then out[#out + 1] = { left = L.REPORT_ESCAPED_HINT, small = true, color = { 0.62, 0.14, 0.07 } } end
   if (r.total or 0) > 0 then
     out[#out + 1] = { left = r.sparkmack and L.REPORT_SOURCE or L.REPORT_SOURCE_VENDOR, small = true, grey = true }
   end
@@ -124,7 +125,7 @@ function R.Show(p)
   local when = date and date("%d.%m %H:%M", r.started) or ""
   sub:SetText(L.REPORT_WHEN:format(when, r.zone or "") .. (r.who and ("  ·  " .. r.who) or ""))
   for _, x in ipairs(pool) do x.icon:Hide() x.left:Hide() x.right:Hide() end
-  local y, n = -76, 0
+  local y, n = -72, 0
   for _, line in ipairs(R.Lines(r)) do
     if line.gap then
       y = y - 6
@@ -144,7 +145,7 @@ function R.Show(p)
       end
       x.left:SetWidth(line.right and (WIDTH - 170) or (WIDTH - 72))
       x.left:SetText(line.left or "")
-      local c = line.color or (line.grey and { 0.7, 0.8, 0.8 }) or { 0.96, 0.94, 0.88 }
+      local c = line.color or (line.grey and ns.FADED) or ns.INK
       x.left:SetTextColor(c[1], c[2], c[3])
       x.left:Show()
       if line.right then
@@ -157,7 +158,7 @@ function R.Show(p)
       y = y - math.max(18, (h or 12) + 6)
     end
   end
-  f:SetHeight(-y + 60)
+  f:SetHeight(-y + 62)
   pageFs:SetText(#list > 1 and L.REPORT_PAGE:format(page, #list) or "")
   prevBtn:SetShown(page < #list)
   nextBtn:SetShown(page > 1)
