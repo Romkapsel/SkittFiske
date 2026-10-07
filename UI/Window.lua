@@ -37,8 +37,9 @@ function ns.Text(parent, font, color, size, path, shadow)
 end
 
 -- Daniels røde knapper (art/knapper.png → Media/btn_*.tga, art/skilt.png → Media/lbl_*.tga). tex = filnavnet uten .tga
-function ns.IconButton(parent, tex, w, h, tip, onClick)
-  local b = CreateFrame("Button", nil, parent)
+-- macro = tekst: knappen er sikker og kjører makroen (samme vei som makroknappen på baren), ellers onClick
+function ns.IconButton(parent, tex, w, h, tip, onClick, macro)
+  local b = CreateFrame("Button", nil, parent, macro and "SecureActionButtonTemplate" or nil)
   b:SetSize(w, h)
   b.iconName = tex
   b.tex = b:CreateTexture(nil, "ARTWORK")
@@ -49,8 +50,14 @@ function ns.IconButton(parent, tex, w, h, tip, onClick)
   hl:SetTexture(M .. tex .. ".tga")
   hl:SetBlendMode("ADD")
   hl:SetAlpha(0.3)
-  b:RegisterForClicks("LeftButtonUp")
-  b:SetScript("OnClick", onClick)
+  if macro then
+    b:RegisterForClicks(Game.ClickMode())
+    b:SetAttribute("type", "macro")
+    b:SetAttribute("macrotext", macro)
+  else
+    b:RegisterForClicks("LeftButtonUp")
+    b:SetScript("OnClick", onClick)
+  end
   b:SetScript("OnMouseDown", function(self) self.tex:SetVertexColor(0.75, 0.75, 0.75) end)
   b:SetScript("OnMouseUp", function(self) self.tex:SetVertexColor(1, 1, 1) end)
   b:SetScript("OnEnter", function(self)
@@ -256,7 +263,7 @@ function W.Create(cdb)
   arrow:SetTexture(M .. "arrow_down.tga")
 
   local c = LAYOUT.close
-  at(ns.IconButton(f, "btn_close", px(c[3]), px(c[4]), L.BTN_DONE, function() ns.Stop() end), c[1], c[2]) -- vinduet åpent = du fisker
+  at(ns.IconButton(f, "btn_close", px(c[3]), px(c[4]), L.BTN_DONE, nil, "/skitt"), c[1], c[2]) -- vinduet åpent = du fisker
 
   -- 1) Fiskeskill øverst, bred stolpe
   local bx, by, bw, bh = unpack(LAYOUT.bar)

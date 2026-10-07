@@ -204,7 +204,9 @@ end
 function Game.Equip(item, slot)
   local f = (C_Item and C_Item.EquipItemByName) or EquipItemByName
   if not f then return false end
-  return (pcall(f, item, slot))
+  local ok, err = pcall(f, item, slot)
+  if not ok and ns.Debug then ns.Debug.Note("equip", ("%s -> %s: %s"):format(tostring(item), tostring(slot), tostring(err))) end
+  return ok
 end
 
 -- Ta av det som sitter på slot, og legg det i en ledig bag

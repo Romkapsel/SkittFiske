@@ -22,6 +22,17 @@ function D.Count(k)
 end
 
 -- Feilmeldinger mens du fisker (for å finne «Your fish got away!» og «No fish are hooked.»)
+-- Korte notater (utstyrsbytte som feilet, handlinger spillet blokkerte), de 10 siste per type
+function D.Note(kind, text)
+  local d = store()
+  if not d then return end
+  d.notes = d.notes or {}
+  local list = d.notes[kind] or {}
+  d.notes[kind] = list
+  table.insert(list, 1, ("%s %s"):format(date and date("%H:%M:%S") or "", tostring(text)))
+  while #list > 10 do table.remove(list) end
+end
+
 function D.Error(msg)
   local d = store()
   if not d or not ns.active then return end

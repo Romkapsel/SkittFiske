@@ -54,7 +54,13 @@ check(not NAMED.SkittFiskeWindow.shown, "skjult etter kampen")
 
 -- Krysset i vinduet avslutter som makroen
 check(NS.active, "fisker fortsatt (vinduet var bare skjult)")
+local closeBtn
 for _, f in ipairs(ALLFRAMES) do
-  if f.iconName == "btn_close" and f.parent == NAMED.SkittFiskeWindow then RunScript(f, "OnClick") end
+  if f.iconName == "btn_close" and f.parent == NAMED.SkittFiskeWindow then closeBtn = f end
 end
+check(closeBtn and closeBtn.secure and closeBtn.attrs.type == "macro" and closeBtn.attrs.macrotext == "/skitt",
+  "krysset kjører /skitt som makroknappen")
+Click(closeBtn)
+check(T.macroRuns[#T.macroRuns] == "/skitt", "klikket kjører makroen")
+Slash("") -- det makroen gjør
 check(not NS.active and not NAMED.SkittFiskeWindow.shown, "krysset avslutter fiskingen")

@@ -151,6 +151,13 @@ end
 
 on.LOOT_CLOSED = function() ns.Session.OnLootClosed(cdb) end
 
+-- Spillet nektet en handling fra Skitt Fiske: noter hva (vises i /skitt debug og SavedVariables)
+local function blocked(addon, func)
+  if addon == addonName then ns.Debug.Note("blocked", func) end
+end
+on.ADDON_ACTION_BLOCKED = blocked
+on.ADDON_ACTION_FORBIDDEN = blocked
+
 on.UI_ERROR_MESSAGE = function(a, b)
   ns.Session.OnError(cdb, a, b)
   if ns.active then ns.Window.RefreshCatch(cdb) end
