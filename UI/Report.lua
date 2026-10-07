@@ -4,7 +4,7 @@ local R = {}
 ns.Report = R
 local Logic, Game, L = ns.Logic, ns.Game, ns.L
 
-local WIDTH = 300
+local WIDTH = 330
 local f, sub, pageFs, prevBtn, nextBtn
 local pool = {}
 local page = 1
@@ -15,12 +15,34 @@ local function row(i)
   r = {}
   r.icon = f:CreateTexture(nil, "ARTWORK")
   r.icon:SetSize(16, 16)
-  r.left = ns.Text(f, "GameFontNormalSmall", 1, 1, 1)
+  r.left = ns.Text(f, "GameFontNormalSmall", 1, 1, 1, 12)
   r.left:SetJustifyH("LEFT")
-  r.right = ns.Text(f, "GameFontNormalSmall", 1, 1, 1)
+  r.right = ns.Text(f, "GameFontNormalSmall", 1, 1, 1, 12)
   r.right:SetJustifyH("RIGHT")
   pool[i] = r
   return r
+end
+
+-- Treplata med vann (Media/panel.tga) i ni deler, så den kan bli så høy som rapporten trenger
+local function panel(frame)
+  local C, T = 34, 48 / 256
+  local cells = {
+    { "TOPLEFT", 0, T, 0, T }, { "TOP", T, 1 - T, 0, T }, { "TOPRIGHT", 1 - T, 1, 0, T },
+    { "LEFT", 0, T, T, 1 - T }, { "CENTER", T, 1 - T, T, 1 - T }, { "RIGHT", 1 - T, 1, T, 1 - T },
+    { "BOTTOMLEFT", 0, T, 1 - T, 1 }, { "BOTTOM", T, 1 - T, 1 - T, 1 }, { "BOTTOMRIGHT", 1 - T, 1, 1 - T, 1 },
+  }
+  for _, c in ipairs(cells) do
+    local t = frame:CreateTexture(nil, "BACKGROUND")
+    t:SetTexture(ns.MEDIA .. "panel.tga")
+    t:SetTexCoord(c[2], c[3], c[4], c[5])
+    local p = c[1]
+    local left, right = p:find("LEFT"), p:find("RIGHT")
+    local top, bottom = p:find("TOP"), p:find("BOTTOM")
+    if left then t:SetPoint("LEFT", 0, 0) t:SetWidth(C) elseif right then t:SetPoint("RIGHT", 0, 0) t:SetWidth(C)
+    else t:SetPoint("LEFT", C, 0) t:SetPoint("RIGHT", -C, 0) end
+    if top then t:SetPoint("TOP", 0, 0) t:SetHeight(C) elseif bottom then t:SetPoint("BOTTOM", 0, 0) t:SetHeight(C)
+    else t:SetPoint("TOP", 0, -C) t:SetPoint("BOTTOM", 0, C) end
+  end
 end
 
 local function create()
@@ -35,24 +57,24 @@ local function create()
   f:RegisterForDrag("LeftButton")
   f:SetScript("OnDragStart", f.StartMoving)
   f:SetScript("OnDragStop", f.StopMovingOrSizing)
-  ns.Background(f, 0.95)
+  panel(f)
   if UISpecialFrames then table.insert(UISpecialFrames, "SkittFiskeReport") end -- Esc lukker
 
-  local title = ns.Text(f, "GameFontNormalLarge", 0.31, 0.7, 0.85)
-  title:SetPoint("TOPLEFT", 12, -10)
-  title:SetText(L.REPORT_TITLE)
-  sub = ns.Text(f, "GameFontNormalSmall", 0.55, 0.55, 0.55)
-  sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -3)
+  local plaque = ns.Plaque(f, L.REPORT_TITLE, 180, 30)
+  plaque:SetPoint("TOP", 0, -14)
+  sub = ns.Text(f, "GameFontNormalSmall", 0.75, 0.84, 0.84, 11)
+  sub:SetPoint("TOP", plaque, "BOTTOM", 0, -4)
 
-  ns.CloseButton(f, function() f:Hide() end)
+  local close = ns.RedButton(f, "X", 18, 18, function() f:Hide() end)
+  close:SetPoint("TOPRIGHT", -12, -12)
 
-  local done = ns.TextButton(f, L.REPORT_CLOSE, 80, function() f:Hide() end)
-  done:SetPoint("BOTTOMRIGHT", -10, 10)
-  prevBtn = ns.TextButton(f, "<", 26, function() R.Show(page + 1) end)
-  prevBtn:SetPoint("BOTTOMLEFT", 10, 10)
-  nextBtn = ns.TextButton(f, ">", 26, function() R.Show(page - 1) end)
+  local done = ns.RedButton(f, L.REPORT_CLOSE, 80, 24, function() f:Hide() end)
+  done:SetPoint("BOTTOMRIGHT", -24, 18)
+  prevBtn = ns.RedButton(f, "<", 26, 24, function() R.Show(page + 1) end)
+  prevBtn:SetPoint("BOTTOMLEFT", 24, 18)
+  nextBtn = ns.RedButton(f, ">", 26, 24, function() R.Show(page - 1) end)
   nextBtn:SetPoint("LEFT", prevBtn, "RIGHT", 4, 0)
-  pageFs = ns.Text(f, "GameFontNormalSmall", 0.55, 0.55, 0.55)
+  pageFs = ns.Text(f, "GameFontNormalSmall", 0.75, 0.84, 0.84, 11)
   pageFs:SetPoint("LEFT", nextBtn, "RIGHT", 8, 0)
 end
 
@@ -102,7 +124,7 @@ function R.Show(p)
   local when = date and date("%d.%m %H:%M", r.started) or ""
   sub:SetText(L.REPORT_WHEN:format(when, r.zone or "") .. (r.who and ("  ·  " .. r.who) or ""))
   for _, x in ipairs(pool) do x.icon:Hide() x.left:Hide() x.right:Hide() end
-  local y, n = -48, 0
+  local y, n = -76, 0
   for _, line in ipairs(R.Lines(r)) do
     if line.gap then
       y = y - 6
@@ -113,20 +135,20 @@ function R.Show(p)
       x.right:ClearAllPoints()
       if line.icon then
         x.icon:ClearAllPoints()
-        x.icon:SetPoint("TOPLEFT", 12, y)
+        x.icon:SetPoint("TOPLEFT", 36, y)
         x.icon:SetTexture(line.icon)
         x.icon:Show()
-        x.left:SetPoint("TOPLEFT", 32, y - 2)
+        x.left:SetPoint("TOPLEFT", 56, y - 2)
       else
-        x.left:SetPoint("TOPLEFT", 12, y - 2)
+        x.left:SetPoint("TOPLEFT", 36, y - 2)
       end
-      x.left:SetWidth(line.right and (WIDTH - 130) or (WIDTH - 24))
+      x.left:SetWidth(line.right and (WIDTH - 170) or (WIDTH - 72))
       x.left:SetText(line.left or "")
-      local c = line.color or (line.grey and { 0.5, 0.5, 0.5 }) or { 0.9, 0.9, 0.9 }
+      local c = line.color or (line.grey and { 0.7, 0.8, 0.8 }) or { 0.96, 0.94, 0.88 }
       x.left:SetTextColor(c[1], c[2], c[3])
       x.left:Show()
       if line.right then
-        x.right:SetPoint("TOPRIGHT", -12, y - 2)
+        x.right:SetPoint("TOPRIGHT", -36, y - 2)
         x.right:SetText(line.right)
         x.right:SetTextColor(c[1], c[2], c[3])
         x.right:Show()
@@ -135,7 +157,7 @@ function R.Show(p)
       y = y - math.max(18, (h or 12) + 6)
     end
   end
-  f:SetHeight(-y + 44)
+  f:SetHeight(-y + 60)
   pageFs:SetText(#list > 1 and L.REPORT_PAGE:format(page, #list) or "")
   prevBtn:SetShown(page < #list)
   nextBtn:SetShown(page > 1)

@@ -1,13 +1,22 @@
--- Fiskevinduet: skill, agn, fangsten så langt. Skjult til du starter å fiske.
--- Agnknappene er sikre knapper, så vinduet kan ikke vises, skjules eller flyttes i kamp (det køes).
+-- Fiskevinduet: en fisk av treverk med vann i midten (Daniels forbilde 7. okt). Skjult til du starter å fiske.
+-- Agn-ringene er sikre knapper, så vinduet kan ikke vises, skjules, skaleres eller flyttes i kamp (det køes).
+-- Bildene tegnes av tools/render_media.py; plasseringene i LAYOUT er piksler i Media/frame.tga (1024 × 512).
 local addonName, ns = ...
 local W = {}
 ns.Window = W
 local Data, Logic, Game, L = ns.Data, ns.Logic, ns.Game, ns.L
 
+ns.MEDIA = "Interface\\AddOns\\SkittFiske\\Media\\"
+local M = ns.MEDIA
+local FONT_TITLE, FONT_TEXT = "Fonts\\MORPHEUS.TTF", "Fonts\\FRIZQT__.TTF"
+local GOLD = { 0.93, 0.77, 0.36 }
+local PLAQUE_TEXT = { 0.94, 0.85, 0.55 }
+local LIGHT = { 0.96, 0.94, 0.88 }
+local DIM = { 0.75, 0.84, 0.84 }
+
 ------------------------------------------------------------------------
 -- Byggeklosser uten spillets maler (BackdropTemplate, UIPanelCloseButton … stoppet vinduet i Forever 7. okt).
--- Bare fontene Control bruker. Pynt som kan feile, går gjennom ns.Safe og skrives i debug i stedet for å stoppe resten.
+-- Pynt som kan feile, går gjennom ns.Safe og skrives i debug i stedet for å stoppe resten.
 ------------------------------------------------------------------------
 
 function ns.Safe(label, fn)
@@ -16,201 +25,293 @@ function ns.Safe(label, fn)
   return ok
 end
 
-function ns.Text(parent, font, r, g, b)
+-- Tekst med egen font (Friz/Morpheus); faller tilbake til spillets fontobjekt hvis fonten ikke kan settes
+function ns.Text(parent, font, r, g, b, size, path)
   local fs = parent:CreateFontString(nil, "OVERLAY")
-  fs:SetFontObject(_G[font] or GameFontNormal)
+  local ok = size and fs:SetFont(path or FONT_TEXT, size, "")
+  if not ok then fs:SetFontObject(_G[font] or GameFontNormal) end
+  if fs.SetShadowOffset then fs:SetShadowOffset(1, -1) end
   if r then fs:SetTextColor(r, g, b) end
   return fs
 end
 
-local EDGE = { 0.31, 0.7, 0.85, 0.9 }
-function ns.Background(f, alpha)
-  local bg = f:CreateTexture(nil, "BACKGROUND")
-  bg:SetAllPoints()
-  bg:SetColorTexture(0.04, 0.09, 0.13, alpha)
-  local sides = {
-    { "TOPLEFT", "TOPRIGHT", nil, 1 }, { "BOTTOMLEFT", "BOTTOMRIGHT", nil, 1 },
-    { "TOPLEFT", "BOTTOMLEFT", 1, nil }, { "TOPRIGHT", "BOTTOMRIGHT", 1, nil },
-  }
-  for _, s in ipairs(sides) do
-    local t = f:CreateTexture(nil, "BORDER")
-    t:SetColorTexture(EDGE[1], EDGE[2], EDGE[3], EDGE[4])
-    t:SetPoint(s[1])
-    t:SetPoint(s[2])
-    if s[3] then t:SetWidth(s[3]) else t:SetHeight(s[4]) end
-  end
-end
-
-function ns.TextButton(parent, text, width, onClick)
+-- Knapp med det røde bildet (Media/button.tga)
+function ns.RedButton(parent, text, w, h, onClick)
   local b = CreateFrame("Button", nil, parent)
-  b:SetSize(width, 22)
-  local bg = b:CreateTexture(nil, "BACKGROUND")
+  b:SetSize(w, h)
+  local bg = b:CreateTexture(nil, "ARTWORK")
   bg:SetAllPoints()
-  bg:SetColorTexture(0.12, 0.25, 0.32, 0.9)
+  bg:SetTexture(M .. "button.tga")
+  bg:SetTexCoord(0, 0.75, 0, 0.75) -- 192 × 48 av 256 × 64
   local hl = b:CreateTexture(nil, "HIGHLIGHT")
   hl:SetAllPoints()
-  hl:SetColorTexture(1, 1, 1, 0.15)
-  b.label = ns.Text(b, "GameFontNormalSmall", 1, 1, 1)
-  b.label:SetPoint("CENTER")
+  hl:SetTexture(M .. "button.tga")
+  hl:SetTexCoord(0, 0.75, 0, 0.75)
+  hl:SetBlendMode("ADD")
+  hl:SetAlpha(0.35)
+  b.label = ns.Text(b, "GameFontNormalSmall", PLAQUE_TEXT[1], PLAQUE_TEXT[2], PLAQUE_TEXT[3], math.max(9, math.floor(h * 0.5)))
+  b.label:SetPoint("CENTER", 0, 1)
   b.label:SetText(text)
   b:RegisterForClicks("LeftButtonUp")
   b:SetScript("OnClick", onClick)
   return b
 end
+ns.TextButton = function(parent, text, w, onClick) return ns.RedButton(parent, text, w, 22, onClick) end
 
-function ns.CloseButton(parent, onClick)
-  local b = ns.TextButton(parent, "X", 20, onClick)
-  b:SetHeight(20)
+function ns.CloseButton(parent, onClick, size)
+  local b = ns.RedButton(parent, "X", size or 20, size or 20, onClick)
   b:SetPoint("TOPRIGHT", -6, -6)
   return b
 end
 
-local WIDTH, ROWS, PICK = 250, 8, 6
-local f, skillFs, zoneFs, lureBtn, lureText, glow, pulse, statsFs, hintFs, warnFs, emptyFs
-local rows, picks = {}, {}
+-- Grønt skilt med gullkant og tekst (Media/plaque.tga)
+function ns.Plaque(parent, text, w, h)
+  local p = CreateFrame("Frame", nil, parent)
+  p:SetSize(w, h)
+  local t = p:CreateTexture(nil, "ARTWORK")
+  t:SetAllPoints()
+  t:SetTexture(M .. "plaque.tga")
+  t:SetTexCoord(0, 1, 0, 0.75) -- 256 × 48 av 256 × 64
+  p.label = ns.Text(p, "GameFontNormalSmall", PLAQUE_TEXT[1], PLAQUE_TEXT[2], PLAQUE_TEXT[3], math.max(10, math.floor(h * 0.42)))
+  p.label:SetPoint("CENTER", 0, 1)
+  p.label:SetText(text)
+  return p
+end
+
+------------------------------------------------------------------------
+-- Mål
+------------------------------------------------------------------------
+
+local TEX_W, TEX_H = 1024, 512
+local WIN_W = 720
+local S = WIN_W / TEX_W
+local WIN_H = TEX_H * S
+local LAYOUT = {
+  title = 104, zone = 146, left = 290, right = 545, col = 220,
+  plaque1 = 172, plaque2 = 284, checks = 212, checkStep = 24,
+  rings = 322, ringStep = 62, ring = 56, caught = 212, bar = 236, stats = 268,
+  rows = 322, rowStep = 19, hint = 432, buttons = 600, buttonStep = 108, buttonY = 426, close = { 772, 74 },
+}
+local RINGS, ROWS = 4, 4
+
+local function px(v) return v * S end
+local function at(region, x, y, point)
+  region:ClearAllPoints()
+  region:SetPoint(point or "TOPLEFT", region.anchorTo or region:GetParent(), "TOPLEFT", px(x), -px(y))
+end
+
+local f, zoneFs, hintFs, caughtFs, statsFs, barFill, barText, noLureFs
+local checks, rings, rows = {}, {}, {}
 local lures = {}
 local isLure = {} -- item-ID → om det er agn (tooltipen sjekkes én gang per ting)
+local pulses = {}
 
 local function macroFor(id) return ("/use item:%d\n/use %d"):format(id, Data.MAIN_HAND) end
-
-local function lureTooltip(self)
-  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-  if self.lureId then
-    GameTooltip:SetItemByID(self.lureId)
-  elseif #lures == 0 then
-    GameTooltip:SetText(L.LURE_NONE_IN_BAGS)
-  else
-    GameTooltip:SetText(L.LURE_PICK)
-  end
-  GameTooltip:Show()
-end
-
 local function hideTip() GameTooltip:Hide() end
 
-local function setPicker(show)
-  if Game.InCombat() then return end
-  for i, b in ipairs(picks) do b:SetShown(show and lures[i] ~= nil) end
+------------------------------------------------------------------------
+-- Bygging
+------------------------------------------------------------------------
+
+local function makeRing(i)
+  local size = px(LAYOUT.ring)
+  local b = CreateFrame("Button", nil, f, "SecureActionButtonTemplate")
+  b:SetSize(size, size)
+  at(b, LAYOUT.left + 10 + (i - 1) * LAYOUT.ringStep, LAYOUT.rings)
+  b:RegisterForClicks(Game.ClickMode()) -- bare én av dem, ellers brukes agnet to ganger
+  b:SetAttribute("type", "macro")
+  b.glow = b:CreateTexture(nil, "BACKGROUND")
+  b.glow:SetPoint("TOPLEFT", -px(6), px(6))
+  b.glow:SetPoint("BOTTOMRIGHT", px(6), -px(6))
+  b.glow:SetTexture(M .. "mask_circle.tga")
+  b.glow:SetVertexColor(1, 0.8, 0.2)
+  b.glow:Hide()
+  b.icon = b:CreateTexture(nil, "ARTWORK")
+  b.icon:SetPoint("TOPLEFT", px(8), -px(8))
+  b.icon:SetPoint("BOTTOMRIGHT", -px(8), px(8))
+  ns.Safe("ringmaske", function()
+    local mask = b:CreateMaskTexture()
+    mask:SetAllPoints(b.icon)
+    mask:SetTexture(M .. "mask_circle.tga", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    b.icon:AddMaskTexture(mask)
+  end)
+  b.ring = b:CreateTexture(nil, "OVERLAY")
+  b.ring:SetAllPoints()
+  b.ring:SetTexture(M .. "ring.tga")
+  b.count = ns.Text(b, "GameFontNormalSmall", 1, 1, 1, 12)
+  b.count:SetPoint("BOTTOMRIGHT", -px(2), px(4))
+  b:SetScript("OnEnter", function(self)
+    self.ring:SetVertexColor(1.3, 1.2, 0.9)
+    if self.lureId then
+      GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+      GameTooltip:SetItemByID(self.lureId)
+      GameTooltip:Show()
+    end
+  end)
+  b:SetScript("OnLeave", function(self) self.ring:SetVertexColor(1, 1, 1) hideTip() end)
+  b:Hide()
+  return b
 end
 
-local function makeLureButton(parent, size)
-  local b = CreateFrame("Button", nil, parent, "SecureActionButtonTemplate")
-  b:SetSize(size, size)
-  b:RegisterForClicks(Game.ClickMode()) -- bare én av dem, ellers brukes agnet to ganger
-  b.icon = b:CreateTexture(nil, "ARTWORK")
-  b.icon:SetAllPoints()
-  b.count = ns.Text(b, "GameFontNormalSmall", 1, 1, 1)
-  b.count:SetPoint("BOTTOMRIGHT", -2, 2)
-  ns.Safe("highlight", function()
-    local h = b:CreateTexture(nil, "HIGHLIGHT")
-    h:SetAllPoints()
-    h:SetColorTexture(1, 1, 1, 0.25)
-  end)
-  b:SetScript("OnEnter", lureTooltip)
-  b:SetScript("OnLeave", hideTip)
-  return b
+local function makeCheck(i, label)
+  local y = LAYOUT.checks + (i - 1) * LAYOUT.checkStep
+  local c = {}
+  c.box = f:CreateTexture(nil, "ARTWORK")
+  c.box:SetSize(px(22), px(22))
+  at(c.box, LAYOUT.left + 6, y)
+  c.box:SetTexture(M .. "box.tga")
+  c.mark = f:CreateTexture(nil, "OVERLAY")
+  c.mark:SetSize(px(22), px(22))
+  at(c.mark, LAYOUT.left + 6, y)
+  c.text = ns.Text(f, "GameFontNormalSmall", LIGHT[1], LIGHT[2], LIGHT[3], 12)
+  at(c.text, LAYOUT.left + 36, y + 3)
+  c.text:SetText(label)
+  return c
 end
 
 function W.Create(cdb)
   if f then return f end
   f = CreateFrame("Frame", "SkittFiskeWindow", UIParent)
   f:Hide() -- skjult til den er ferdig bygget (et halvt vindu skal aldri vises)
-  f:SetSize(WIDTH, 120)
+  f:SetSize(WIN_W, WIN_H)
   f:SetFrameStrata("MEDIUM")
   f:SetClampedToScreen(true)
   f:SetMovable(true)
   f:EnableMouse(true)
   f:RegisterForDrag("LeftButton")
-  ns.Background(f, 0.92)
+  f:SetScale(cdb.scale or 0.85)
   local p = cdb.window
   if p and p.x then f:SetPoint("CENTER", UIParent, "BOTTOMLEFT", p.x, p.y)
-  else f:SetPoint("CENTER", UIParent, "CENTER", 300, 0) end
+  else f:SetPoint("CENTER", UIParent, "CENTER", 200, -60) end
   f:SetScript("OnDragStart", function(self) if not Game.InCombat() then self:StartMoving() end end)
   f:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
     local x, y = self:GetCenter()
     if x then cdb.window = { x = x, y = y } end
   end)
+  -- Shift + rull: større eller mindre (ikke i kamp)
+  f:EnableMouseWheel(true)
+  f:SetScript("OnMouseWheel", function(self, delta)
+    if not IsShiftKeyDown() or Game.InCombat() then return end
+    local s = math.max(0.5, math.min(1.3, (cdb.scale or 0.85) + delta * 0.05))
+    cdb.scale = s
+    self:SetScale(s)
+  end)
 
-  local title = ns.Text(f, "GameFontNormalLarge", 0.31, 0.7, 0.85)
-  title:SetPoint("TOPLEFT", 12, -10)
+  local bg = f:CreateTexture(nil, "BACKGROUND")
+  bg:SetAllPoints()
+  bg:SetTexture(M .. "frame.tga")
+
+  local title = ns.Text(f, "GameFontNormalLarge", GOLD[1], GOLD[2], GOLD[3], 24, FONT_TITLE)
+  title:SetPoint("TOP", f, "TOPLEFT", px(535), -px(LAYOUT.title))
   title:SetText(L.TITLE)
+  zoneFs = ns.Text(f, "GameFontNormalSmall", DIM[1], DIM[2], DIM[3], 11)
+  zoneFs:SetPoint("TOP", f, "TOPLEFT", px(535), -px(LAYOUT.zone))
 
-  -- Vinduet åpent = du fisker; krysset avslutter som makroen
-  ns.CloseButton(f, function() ns.Stop() end)
+  local close = ns.RedButton(f, "X", px(24), px(24), function() ns.Stop() end) -- vinduet åpent = du fisker
+  at(close, LAYOUT.close[1], LAYOUT.close[2])
 
-  skillFs = ns.Text(f, "GameFontNormal", 1, 1, 1)
-  skillFs:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
-  zoneFs = ns.Text(f, "GameFontNormalSmall", 0.55, 0.55, 0.55)
-  zoneFs:SetPoint("TOPLEFT", skillFs, "BOTTOMLEFT", 0, -2)
+  -- Venstre: Klar og Agn
+  local pw, ph = px(LAYOUT.col), px(34)
+  at(ns.Plaque(f, L.PLAQUE_READY, pw, ph), LAYOUT.left, LAYOUT.plaque1)
+  checks.pole = makeCheck(1, L.CHECK_POLE)
+  checks.lure = makeCheck(2, L.CHECK_LURE)
+  checks.sound = makeCheck(3, L.CHECK_SOUND)
+  at(ns.Plaque(f, L.PLAQUE_LURE, pw, ph), LAYOUT.left, LAYOUT.plaque2)
+  for i = 1, RINGS do rings[i] = makeRing(i) end
+  noLureFs = ns.Text(f, "GameFontNormalSmall", DIM[1], DIM[2], DIM[3], 11)
+  at(noLureFs, LAYOUT.left + 10, LAYOUT.rings + 18)
+  noLureFs:SetText(L.LURE_NONE_IN_BAGS)
 
-  -- Agn: én knapp. Ett slags agn i baggen = klikk setter det på. Flere = klikk viser dem.
-  lureBtn = makeLureButton(f, 36)
-  lureBtn:SetPoint("TOPLEFT", zoneFs, "BOTTOMLEFT", 0, -8)
-  lureBtn:HookScript("PostClick", function()
-    if #lures > 1 then setPicker(not (picks[1] and picks[1]:IsShown())) end
-  end)
-  glow = lureBtn:CreateTexture(nil, "OVERLAY")
-  glow:SetPoint("TOPLEFT", -4, 4)
-  glow:SetPoint("BOTTOMRIGHT", 4, -4)
-  glow:SetColorTexture(1, 0.82, 0, 0.35)
-  glow:Hide()
-  ns.Safe("glow", function()
-    local g = glow:CreateAnimationGroup()
-    g:SetLooping("BOUNCE")
-    local a = g:CreateAnimation("Alpha")
-    a:SetFromAlpha(1)
-    a:SetToAlpha(0.2)
-    a:SetDuration(0.6)
-    pulse = g
-  end)
+  -- Høyre: Fiske og Fangst
+  local R = LAYOUT.right
+  at(ns.Plaque(f, L.PLAQUE_SKILL, pw, ph), R, LAYOUT.plaque1)
+  local lbl = ns.Text(f, "GameFontNormalSmall", LIGHT[1], LIGHT[2], LIGHT[3], 12)
+  at(lbl, R + 11, LAYOUT.caught)
+  lbl:SetText(L.CAUGHT)
+  caughtFs = ns.Text(f, "GameFontNormal", GOLD[1], GOLD[2], GOLD[3], 13)
+  caughtFs:SetPoint("TOPRIGHT", f, "TOPLEFT", px(R + LAYOUT.col - 14), -px(LAYOUT.caught - 1))
 
-  lureText = ns.Text(f, "GameFontNormal")
-  lureText:SetPoint("LEFT", lureBtn, "RIGHT", 8, 0)
+  local barBg = f:CreateTexture(nil, "ARTWORK")
+  barBg:SetPoint("TOPLEFT", f, "TOPLEFT", px(R + 4), -px(LAYOUT.bar + 4))
+  barBg:SetSize(px(LAYOUT.col - 8), px(18))
+  barBg:SetColorTexture(0.08, 0.12, 0.12, 0.9)
+  barFill = f:CreateTexture(nil, "ARTWORK", nil, 1)
+  barFill:SetPoint("TOPLEFT", barBg, "TOPLEFT")
+  barFill:SetHeight(px(18))
+  barFill:SetColorTexture(0.31, 0.63, 0.27, 1)
+  barFill.full = px(LAYOUT.col - 8)
+  local barFrame = f:CreateTexture(nil, "OVERLAY")
+  barFrame:SetPoint("TOPLEFT", f, "TOPLEFT", px(R), -px(LAYOUT.bar))
+  barFrame:SetSize(pw, px(26))
+  barFrame:SetTexture(M .. "bar_frame.tga")
+  barText = ns.Text(f, "GameFontNormalSmall", 1, 1, 1, 11)
+  barText:SetPoint("CENTER", barBg, "CENTER", 0, 0)
 
-  for i = 1, PICK do
-    local b = makeLureButton(f, 30)
-    if i == 1 then b:SetPoint("TOPLEFT", lureBtn, "BOTTOMLEFT", 0, -6)
-    else b:SetPoint("LEFT", picks[i - 1], "RIGHT", 4, 0) end
-    b:SetAttribute("type", "macro")
-    b:HookScript("PostClick", function() setPicker(false) end)
-    b:Hide()
-    picks[i] = b
-  end
+  statsFs = ns.Text(f, "GameFontNormalSmall", DIM[1], DIM[2], DIM[3], 11)
+  at(statsFs, R + 11, LAYOUT.stats)
 
-  local anchor = CreateFrame("Frame", nil, f)
-  anchor:SetSize(1, 1)
-  anchor:SetPoint("TOPLEFT", lureBtn, "BOTTOMLEFT", 0, -42)
-  emptyFs = ns.Text(f, "GameFontNormalSmall", 0.55, 0.55, 0.55)
-  emptyFs:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
-  emptyFs:SetText(L.CATCH_EMPTY)
+  at(ns.Plaque(f, L.PLAQUE_CATCH, pw, ph), R, LAYOUT.plaque2)
   for i = 1, ROWS do
     local r = {}
+    local y = LAYOUT.rows + (i - 1) * LAYOUT.rowStep
     r.icon = f:CreateTexture(nil, "ARTWORK")
-    r.icon:SetSize(16, 16)
-    r.icon:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, -(i - 1) * 18)
-    r.text = ns.Text(f, "GameFontNormalSmall", 1, 1, 1)
-    r.text:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
-    r.text:SetWidth(WIDTH - 50)
+    r.icon:SetSize(px(16), px(16))
+    at(r.icon, R + 11, y + 1)
+    r.text = ns.Text(f, "GameFontNormalSmall", LIGHT[1], LIGHT[2], LIGHT[3], 11)
+    at(r.text, R + 33, y + 2)
+    r.text:SetWidth(px(LAYOUT.col - 50))
     r.text:SetJustifyH("LEFT")
+    if r.text.SetWordWrap then r.text:SetWordWrap(false) end
     rows[i] = r
   end
-  statsFs = ns.Text(f, "GameFontNormalSmall")
-  warnFs = ns.Text(f, "GameFontNormalSmall", 1, 0.3, 0.3)
-  warnFs:SetText(L.COMBAT_WARN)
-  warnFs:Hide()
-  hintFs = ns.Text(f, "GameFontNormalSmall", 0.55, 0.55, 0.55)
-  hintFs:SetWidth(WIDTH - 24)
-  hintFs:SetJustifyH("LEFT")
+
+  -- Bunnen: hjelp (eller kampvarsel) og knappene
+  hintFs = ns.Text(f, "GameFontNormalSmall", 0.92, 0.84, 0.67, 11)
+  at(hintFs, LAYOUT.left + 10, LAYOUT.hint)
   hintFs:SetText(L.HINT)
-  f.anchor = anchor
-  f:Hide()
-  f.ready = true
+  local hintHit = CreateFrame("Frame", nil, f)
+  hintHit:SetAllPoints(hintFs)
+  hintHit:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText(L.HINT_TIP, 1, 1, 1, 1, true)
+    GameTooltip:AddLine(L.SIZE_TIP, 0.7, 0.7, 0.7)
+    GameTooltip:Show()
+  end)
+  hintHit:SetScript("OnLeave", hideTip)
+  local bw, bh = px(110), px(30)
+  at(ns.RedButton(f, L.BTN_REPORT, bw, bh, function() ns.Report.Show(1) end), LAYOUT.buttons, LAYOUT.buttonY)
+  at(ns.RedButton(f, L.BTN_DONE, bw, bh, function() ns.Stop() end), LAYOUT.buttons + LAYOUT.buttonStep, LAYOUT.buttonY)
+
+  -- Lys som pulserer når noe mangler (agn-ringene og krysset ved Agn)
+  ns.Safe("glow", function()
+    for _, region in ipairs({ checks.lure.mark, rings[1].glow, rings[2].glow, rings[3].glow, rings[4].glow }) do
+      local g = region:CreateAnimationGroup()
+      g:SetLooping("BOUNCE")
+      local a = g:CreateAnimation("Alpha")
+      a:SetFromAlpha(1)
+      a:SetToAlpha(0.25)
+      a:SetDuration(0.6)
+      pulses[region] = g
+    end
+  end)
 
   f:SetScript("OnUpdate", function(self, el)
     self.tick = (self.tick or 0) + el
     if self.tick >= 1 then self.tick = 0 W.RefreshLure() end
   end)
+  f.ready = true
   return f
+end
+
+local function pulse(region, on)
+  local g = pulses[region]
+  if not g then return end
+  if on and not g:IsPlaying() then g:Play() elseif not on and g:IsPlaying() then g:Stop() region:SetAlpha(1) end
+end
+
+local function setCheck(c, ok)
+  c.mark:SetTexture(M .. (ok and "check.tga" or "cross.tga"))
 end
 
 ------------------------------------------------------------------------
@@ -221,15 +322,25 @@ function W.RefreshSkill()
   if not f or not f.ready then return end
   local rank, max, mod = Game.Skill()
   if rank then
-    skillFs:SetText(L.SKILL:format(rank, max or rank) .. ((mod or 0) > 0 and L.SKILL_BONUS:format(mod) or ""))
+    local text = L.BAR:format(rank, max or rank) .. (((mod or 0) > 0) and ("  +" .. mod) or "")
+    barText:SetText(text)
+    local ratio = (max and max > 0) and math.min(1, rank / max) or 1
+    barFill:SetWidth(math.max(1, barFill.full * ratio))
   else
-    skillFs:SetText(L.SKILL_UNKNOWN)
+    barText:SetText(L.SKILL_UNKNOWN)
+    barFill:SetWidth(1)
   end
   local z, sub = Game.Zone()
   zoneFs:SetText((sub ~= "" and sub ~= z) and (sub .. ", " .. z) or z)
+  -- Stang på?
+  local id = Game.Equipped(Data.MAIN_HAND)
+  local _, class, subClass = nil, nil, nil
+  if id then _, class, subClass = Game.ItemInstant(id) end
+  setCheck(checks.pole, class == Data.POLE_CLASS and subClass == Data.POLE_SUBCLASS)
+  setCheck(checks.sound, ns.active)
 end
 
--- Agnene i baggen og knappene for dem (bare utenfor kamp: sikre attributter)
+-- Agnene i baggen på ringene (bare utenfor kamp: sikre attributter)
 function W.RefreshLures()
   if not f or not f.ready or Game.InCombat() then return end
   local bag, extra = {}, {}
@@ -241,33 +352,21 @@ function W.RefreshLures()
     end
   end)
   lures = Logic.Lures(bag, Data.LURES, extra)
-  local one = #lures == 1 and lures[1] or nil
-  if one then
-    lureBtn:SetAttribute("type", "macro")
-    lureBtn:SetAttribute("macrotext", macroFor(one.id))
-  else
-    lureBtn:SetAttribute("type", nil)
-    lureBtn:SetAttribute("macrotext", nil)
-  end
-  lureBtn.lureId = one and one.id or nil
-  local first = lures[1]
-  lureBtn.icon:SetTexture(first and Game.ItemIcon(first.id) or "Interface\\Icons\\Trade_Fishing")
-  lureBtn.icon:SetDesaturated(first == nil)
-  lureBtn.count:SetText(one and one.count > 1 and one.count or "")
-  for i, b in ipairs(picks) do
+  for i, b in ipairs(rings) do
     local l = lures[i]
     if l then
       b:SetAttribute("macrotext", macroFor(l.id))
       b.lureId = l.id
       b.icon:SetTexture(Game.ItemIcon(l.id))
       b.count:SetText(l.count > 1 and l.count or "")
+      b:Show()
     else
       b.lureId = nil
+      b:SetAttribute("macrotext", nil)
       b:Hide()
     end
   end
-  if #lures < 2 then setPicker(false) end
-  W.Layout()
+  noLureFs:SetShown(#lures == 0)
 end
 
 function W.RefreshLure()
@@ -275,64 +374,54 @@ function W.RefreshLure()
   local has, ms = Game.LureOnPole()
   local state, secs = Logic.LureState(has, ms, Data.LURE_LOW)
   if state == "none" then
-    lureText:SetText(#lures > 0 and L.LURE_NONE or L.LURE_NONE_IN_BAGS)
-    lureText:SetTextColor(1, 0.82, 0)
+    checks.lure.text:SetText(L.CHECK_LURE)
   else
-    lureText:SetText(L.LURE_LEFT:format(Logic.Left(secs, L)))
-    if state == "low" then lureText:SetTextColor(1, 0.82, 0) else lureText:SetTextColor(0.5, 0.83, 0.5) end
+    checks.lure.text:SetText(L.CHECK_LURE_LEFT:format(Logic.Left(secs, L)))
   end
+  setCheck(checks.lure, state ~= "none")
   local light = state ~= "ok" and #lures > 0
-  glow:SetShown(light)
-  if pulse then
-    if light and not pulse:IsPlaying() then pulse:Play() elseif not light and pulse:IsPlaying() then pulse:Stop() end
+  pulse(checks.lure.mark, state ~= "ok")
+  for _, b in ipairs(rings) do
+    b.glow:SetShown(light)
+    pulse(b.glow, light)
   end
 end
 
 function W.RefreshCatch(cdb)
   if not f or not f.ready then return end
   local s = cdb.session
-  local n = 0
+  local list = {}
   if s then
-    local list = {}
     for _, id in ipairs(s.order) do list[#list + 1] = id end
     table.sort(list, function(a, b) return s.items[a] > s.items[b] end)
-    for i = 1, ROWS do
-      local id, r = list[i], rows[i]
-      if id then
-        n = i
-        r.icon:SetTexture(Game.ItemIcon(id))
-        r.text:SetText(L.CATCH_ROW:format(s.items[id], s.names[id] or Game.ItemName(id) or ("#" .. id)))
-        r.icon:Show() r.text:Show()
-      else
-        r.icon:Hide() r.text:Hide()
-      end
-    end
-    local st = L.STATS:format(s.casts, s.caught)
-    if s.escaped > 0 then st = st .. L.STATS_ESCAPED:format(s.escaped) end
-    statsFs:SetText(st)
-  else
-    for _, r in ipairs(rows) do r.icon:Hide() r.text:Hide() end
-    statsFs:SetText("")
   end
-  emptyFs:SetShown(n == 0)
-  f.rowsShown = math.max(n, 1)
-  W.Layout()
-end
-
-function W.Layout()
-  if not f or not f.ready or Game.InCombat() then return end
-  local pickerOpen = picks[1] and picks[1]:IsShown()
-  f.anchor:ClearAllPoints()
-  f.anchor:SetPoint("TOPLEFT", lureBtn, "BOTTOMLEFT", 0, pickerOpen and -44 or -10)
-  local rowsH = (f.rowsShown or 1) * 18
-  statsFs:ClearAllPoints()
-  statsFs:SetPoint("TOPLEFT", f.anchor, "TOPLEFT", 0, -rowsH - 6)
-  warnFs:ClearAllPoints()
-  warnFs:SetPoint("TOPLEFT", statsFs, "BOTTOMLEFT", 0, -4)
-  hintFs:ClearAllPoints()
-  hintFs:SetPoint("TOPLEFT", warnFs:IsShown() and warnFs or statsFs, "BOTTOMLEFT", 0, -8)
-  local h = 10 + 18 + 6 + 14 + 2 + 12 + 8 + 36 + (pickerOpen and 44 or 10) + rowsH + 6 + 14 + (warnFs:IsShown() and 16 or 0) + 8 + 28 + 10
-  f:SetHeight(h)
+  for i, r in ipairs(rows) do
+    local id = list[i]
+    if i == ROWS and #list > ROWS then
+      r.icon:Hide()
+      r.text:SetText(L.MORE:format(#list - ROWS + 1))
+      r.text:SetTextColor(DIM[1], DIM[2], DIM[3])
+      r.text:Show()
+    elseif id then
+      r.icon:SetTexture(Game.ItemIcon(id))
+      r.icon:Show()
+      r.text:SetText(L.CATCH_ROW:format(s.items[id], s.names[id] or Game.ItemName(id) or ("#" .. id)))
+      r.text:SetTextColor(LIGHT[1], LIGHT[2], LIGHT[3])
+      r.text:Show()
+    elseif i == 1 then
+      r.icon:Hide()
+      r.text:SetText(L.CATCH_EMPTY)
+      r.text:SetTextColor(DIM[1], DIM[2], DIM[3])
+      r.text:Show()
+    else
+      r.icon:Hide()
+      r.text:Hide()
+    end
+  end
+  caughtFs:SetText(s and s.caught or 0)
+  local st = L.CASTS:format(s and s.casts or 0)
+  if s and s.escaped > 0 then st = st .. L.STATS_ESCAPED:format(s.escaped) end
+  statsFs:SetText(st)
 end
 
 function W.Refresh(cdb)
@@ -345,9 +434,12 @@ end
 
 function W.CombatWarning(on)
   if not f or not f.ready then return end
-  warnFs:SetShown(on)
-  W.Layout()
+  hintFs:SetText(on and L.COMBAT_WARN or L.HINT)
+  if on then hintFs:SetTextColor(1, 0.35, 0.3) else hintFs:SetTextColor(0.92, 0.84, 0.67) end
 end
+
+-- Ringene til testene
+function W.Rings() return rings end
 
 ------------------------------------------------------------------------
 -- Vise og skjule (køes i kamp)
@@ -362,7 +454,6 @@ end
 function W.Hide()
   if not f then return end
   if Game.InCombat() then ns.Queue("window", false) return end
-  setPicker(false)
   f:Hide()
 end
 

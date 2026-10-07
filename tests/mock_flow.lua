@@ -89,30 +89,19 @@ Fire("UI_ERROR_MESSAGE", 51, "Your fish got away!")
 Fire("UI_ERROR_MESSAGE", 52, "No fish are hooked.")
 check(s.escaped == 1 and s.missed == 1, "slapp unna og for tidlig telles")
 
--- Agn: tre slags i baggen → knappen viser dem, hver knapp bruker agnet på stanga
--- Knappene er rammene laget med SecureActionButtonTemplate i vinduet: agnknappen først, så de seks plassene
-local function collect()
-  local out = {}
-  for _, f in ipairs(ALLFRAMES) do if f.secure and f.parent == win then out[#out + 1] = f end end
-  return out
-end
-check(ALLFRAMES ~= nil, "testen ser rammene")
-local btns = collect()
-local lureBtn = btns[1]
-check(#btns == 7, "agnknapp + seks plasser")
-check(lureBtn.attrs.type == nil, "flere slags agn: knappen åpner valget")
-check(lureBtn.clicks[1] == "AnyDown" and #lureBtn.clicks == 1, "agnknappen klikkes bare én gang (AnyDown)")
-Click(lureBtn)
-check(btns[2].shown and btns[3].shown and btns[4].shown and not btns[5].shown, "tre agn vises")
-check(btns[2].attrs.macrotext == "/use item:6530\n/use 16", "beste agn først, på stanga")
-check(btns[4].attrs.macrotext == "/use item:999001\n/use 16", "nytt Forever-agn funnet via tooltipen")
-Click(btns[2])
+-- Agn: hvert agn i baggen får sin egen ring; klikk = agnet på stanga
+local rings = NS.Window.Rings()
+check(#rings == 4, "fire agn-ringer")
+check(rings[1].secure and rings[1].clicks[1] == "AnyDown" and #rings[1].clicks == 1, "ringene klikkes bare én gang (AnyDown)")
+check(rings[1].shown and rings[2].shown and rings[3].shown and not rings[4].shown, "tre agn vises")
+check(rings[1].attrs.macrotext == "/use item:6530\n/use 16", "beste agn først, på stanga")
+check(rings[3].attrs.macrotext == "/use item:999001\n/use 16", "nytt Forever-agn funnet via tooltipen")
+Click(rings[1])
 check(T.macroRuns[1] == "/use item:6530\n/use 16", "agnet brukes")
-check(not btns[2].shown, "valget lukkes etter klikket")
--- Bare ett slags agn igjen: knappen setter det på direkte
+-- Bare ett slags agn igjen
 for b = 0, 4 do for i = 1, T.bagSize do local id = T.bags[b][i] if id == CRAWLER or id == NEWLURE then T.bags[b][i] = nil end end end
 Fire("BAG_UPDATE_DELAYED")
-check(lureBtn.attrs.type == "macro" and lureBtn.attrs.macrotext == "/use item:6529\n/use 16", "ett agn: ett klikk")
+check(rings[1].attrs.macrotext == "/use item:6529\n/use 16" and rings[1].shown and not rings[2].shown, "ett agn: én ring")
 -- Agnet på stanga
 T.wench = 30000
 NS.Window.RefreshLure()

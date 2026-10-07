@@ -61,6 +61,15 @@ def source_checks():
             if bad:
                 check(False, f"{rel}:{n}: enkel bakstrek: {line.strip()}")
         check("\t" not in src, rel + ": ingen tab-tegn")
+        # Bildene koden bruker, finnes i Media/ og har sider i toerpotens
+        for name in set(re.findall(r'"(\w+\.tga)"', src)):
+            mp = os.path.join(ROOT, "Media", name)
+            check(os.path.exists(mp), f"{rel}: Media/{name} finnes")
+            if os.path.exists(mp):
+                with open(mp, "rb") as fh:
+                    head = fh.read(18)
+                w, h = head[12] | head[13] << 8, head[14] | head[15] << 8
+                check(w & (w - 1) == 0 and h & (h - 1) == 0, f"Media/{name}: {w}x{h} er toerpotens")
 
 
 def new_runtime():
