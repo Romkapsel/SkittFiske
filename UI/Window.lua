@@ -78,7 +78,7 @@ local LAYOUT = {
   warn = 386,
   report = { 672, 431, 66, 34 },
   close = { 738, 94, 44, 22 },
-  drop = 300,                            -- bredden på nedtrekket fra området
+  drop = 380,                            -- bredden på nedtrekket fra området
 }
 local S = 0.8 -- enheter per piksel i frame.tga
 local CROP_W = LAYOUT.crop[2] - LAYOUT.crop[1]
@@ -465,42 +465,50 @@ end
 -- Nedtrekket: fisken som er fanget i området du står i (fra SkittFiskeDB.zones – alle dine karakterer)
 ------------------------------------------------------------------------
 
+-- Nesten svart med gul tekst og litt større skrift (Daniel 7. okt)
+local DROP_GOLD = { 1, 0.82, 0 }
+local DROP_LIGHT = { 1, 0.95, 0.75 }
+local DROP_DIM = { 0.62, 0.6, 0.55 }
+local DROP_ROW = 24
+
 function W.CreateDrop()
+  local w = LAYOUT.drop
   drop = CreateFrame("Frame", nil, f)
   drop:SetFrameLevel((f:GetFrameLevel() or 1) + 20)
-  drop:SetSize(px(LAYOUT.drop), 40)
+  drop:SetSize(px(w), 40)
   drop:SetPoint("TOP", zoneFs, "BOTTOM", 0, -px(6))
   drop:EnableMouse(true)
-  local bg = drop:CreateTexture(nil, "BACKGROUND")
-  bg:SetPoint("TOPLEFT", 1, -1)
-  bg:SetPoint("BOTTOMRIGHT", -1, 1)
-  bg:SetColorTexture(0.93, 0.88, 0.77, 0.98)
   local edge = drop:CreateTexture(nil, "BORDER")
   edge:SetAllPoints()
-  edge:SetColorTexture(0.45, 0.32, 0.18, 1)
-  drop.head = ns.Text(drop, "GameFontNormal", HEAD, 12)
-  drop.head:SetPoint("TOP", 0, -px(8))
-  drop.empty = ns.Text(drop, "GameFontNormalSmall", FADED, 11)
-  drop.empty:SetPoint("TOP", drop.head, "BOTTOM", 0, -px(6))
-  drop.empty:SetWidth(px(LAYOUT.drop - 24))
+  edge:SetColorTexture(0.55, 0.42, 0.18, 1)
+  local bg = drop:CreateTexture(nil, "BACKGROUND", nil, 1)
+  bg:SetPoint("TOPLEFT", 1, -1)
+  bg:SetPoint("BOTTOMRIGHT", -1, 1)
+  bg:SetColorTexture(0.05, 0.04, 0.03, 0.96)
+  edge:SetDrawLayer("BACKGROUND", 0)
+  drop.head = ns.Text(drop, "GameFontNormal", DROP_GOLD, 14, nil, true)
+  drop.head:SetPoint("TOP", 0, -px(10))
+  drop.empty = ns.Text(drop, "GameFontNormalSmall", DROP_DIM, 13)
+  drop.empty:SetPoint("TOP", drop.head, "BOTTOM", 0, -px(8))
+  drop.empty:SetWidth(px(w - 28))
   drop.empty:SetText(L.DROP_EMPTY)
   for i = 1, DROP_ROWS do
     local r = {}
-    local y = -px(30 + (i - 1) * 19)
+    local y = -px(38 + (i - 1) * DROP_ROW)
     r.icon = drop:CreateTexture(nil, "ARTWORK")
-    r.icon:SetSize(px(16), px(16))
+    r.icon:SetSize(px(20), px(20))
     r.icon:SetPoint("TOPLEFT", px(12), y)
-    r.text = ns.Text(drop, "GameFontNormalSmall", INK, 11)
-    r.text:SetPoint("TOPLEFT", px(34), y - px(2))
-    r.text:SetWidth(px(LAYOUT.drop - 100))
+    r.text = ns.Text(drop, "GameFontNormal", DROP_GOLD, 13, nil, true)
+    r.text:SetPoint("TOPLEFT", px(40), y - px(3))
+    r.text:SetWidth(px(w - 40 - 100))
     r.text:SetJustifyH("LEFT")
     if r.text.SetWordWrap then r.text:SetWordWrap(false) end
-    r.pct = ns.Text(drop, "GameFontNormalSmall", HEAD, 11)
-    r.pct:SetPoint("TOPRIGHT", -px(12), y - px(2))
     r.mark = drop:CreateTexture(nil, "OVERLAY")
-    r.mark:SetSize(px(15), px(15))
-    r.mark:SetPoint("TOPRIGHT", -px(62), y)
+    r.mark:SetSize(px(18), px(18))
+    r.mark:SetPoint("TOPLEFT", px(w - 92), y - px(1))
     r.mark:SetTexture(M .. "check.tga")
+    r.pct = ns.Text(drop, "GameFontNormal", DROP_LIGHT, 13, nil, true)
+    r.pct:SetPoint("TOPRIGHT", -px(12), y - px(3))
     dropRows[i] = r
   end
   drop:Hide()
@@ -519,7 +527,7 @@ function W.RefreshDrop()
       r.icon:SetTexture(Game.ItemIcon(it.id))
       r.text:SetText(Game.ItemName(it.id) or (data and data.names[it.id]) or ("#" .. it.id))
       r.pct:SetText(Logic.Pct(it.pct))
-      local c = it.own and FADED or HEAD
+      local c = it.own and DROP_DIM or DROP_LIGHT
       r.pct:SetTextColor(c[1], c[2], c[3])
       r.mark:SetShown(it.caught ~= nil)
       r.icon:Show() r.text:Show() r.pct:Show()
@@ -528,7 +536,7 @@ function W.RefreshDrop()
     end
   end
   local n = math.min(#list, DROP_ROWS)
-  drop:SetHeight(px(n > 0 and (36 + n * 19) or 60))
+  drop:SetHeight(px(n > 0 and (46 + n * DROP_ROW) or 70))
 end
 
 function W.ToggleDrop()
