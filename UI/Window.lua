@@ -488,6 +488,10 @@ function W.CreateDrop()
     if r.text.SetWordWrap then r.text:SetWordWrap(false) end
     r.pct = ns.Text(drop, "GameFontNormalSmall", HEAD, 11)
     r.pct:SetPoint("TOPRIGHT", -px(12), y - px(2))
+    r.mark = drop:CreateTexture(nil, "OVERLAY")
+    r.mark:SetSize(px(15), px(15))
+    r.mark:SetPoint("TOPRIGHT", -px(62), y)
+    r.mark:SetTexture(M .. "check.tga")
     dropRows[i] = r
   end
   drop:Hide()
@@ -496,18 +500,22 @@ end
 function W.RefreshDrop()
   if not drop or not drop:IsShown() and not drop.opening then return end
   local z, sub = Game.Zone()
-  local list, scope = Logic.ZoneFish(ns.db and ns.db.zones or {}, z, sub)
-  drop.head:SetText(scope == "zone" and L.DROP_ZONE:format(z) or L.DROP_HERE:format((sub ~= "" and sub) or z))
+  local data = ns.FishData
+  local list = Logic.AreaFish(data and data.zones, ns.db and ns.db.zones or {}, z, sub)
+  drop.head:SetText(L.DROP_HERE:format((sub ~= "" and sub) or z))
   drop.empty:SetShown(#list == 0)
   for i, r in ipairs(dropRows) do
     local it = list[i]
     if it then
       r.icon:SetTexture(Game.ItemIcon(it.id))
-      r.text:SetText(Game.ItemName(it.id) or ("#" .. it.id))
-      r.pct:SetText(L.DROP_PCT:format(math.floor(it.pct * 100 + 0.5)))
+      r.text:SetText(Game.ItemName(it.id) or (data and data.names[it.id]) or ("#" .. it.id))
+      r.pct:SetText(Logic.Pct(it.pct))
+      local c = it.own and FADED or HEAD
+      r.pct:SetTextColor(c[1], c[2], c[3])
+      r.mark:SetShown(it.caught ~= nil)
       r.icon:Show() r.text:Show() r.pct:Show()
     else
-      r.icon:Hide() r.text:Hide() r.pct:Hide()
+      r.icon:Hide() r.text:Hide() r.pct:Hide() r.mark:Hide()
     end
   end
   local n = math.min(#list, DROP_ROWS)

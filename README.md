@@ -20,3 +20,7 @@ kampen er over.
 Har du Sparkmack's Kurstidende, regnes verdien med normalkursen i AH. Ellers brukes det vendoren betaler.
 
 `/skitt rapport` viser de siste rapportene. Bla med pilene.
+
+Klikk på områdenavnet i vinduet, så ser du hva som kan fanges der og sjansen per fangst. En hake betyr at du har fått den.
+
+Fiskedataene kommer fra [CMaNGOS Classic-databasen](https://github.com/cmangos/classic-db) (GPL-3).

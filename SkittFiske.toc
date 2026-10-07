@@ -8,6 +8,7 @@
 
 Locale\nbNO.lua
 Data.lua
+FishData.lua
 Logic.lua
 Game.lua
 Gear.lua

@@ -183,6 +183,32 @@ function Logic.ZoneFish(zones, zone, sub)
   return list, scope, total
 end
 
+-- Hva som kan fanges her: databasen (ns.FishData, underområdet først, ellers sonen) pluss det du selv har fått
+-- som ikke står der (Forever kan ha endret noe). Svar: { { id, pct, caught = antall|nil, own = true|nil } }, har data
+function Logic.AreaFish(data, zones, zone, sub)
+  local subKey = (sub and sub ~= "" and sub ~= zone) and (zone .. " / " .. sub) or nil
+  local base = data and ((subKey and data[subKey]) or data[zone]) or nil
+  local own = Logic.ZoneFish(zones, zone, sub)
+  local caught = {}
+  for _, o in ipairs(own) do caught[o.id] = o.n end
+  local list, seen = {}, {}
+  for _, row in ipairs(base or {}) do
+    list[#list + 1] = { id = row[1], pct = row[2], caught = caught[row[1]] }
+    seen[row[1]] = true
+  end
+  for _, o in ipairs(own) do
+    if not seen[o.id] then list[#list + 1] = { id = o.id, pct = o.pct, caught = o.n, own = true } end
+  end
+  return list, base ~= nil
+end
+
+-- Sjanse som tekst: «42 %», under 1 % med én desimal og komma: «0,7 %»
+function Logic.Pct(p)
+  local v = (p or 0) * 100
+  if v < 1 then return (("%.1f %%"):format(v):gsub("%.", ",")) end
+  return ("%d %%"):format(math.floor(v + 0.5))
+end
+
 -- price(id) → kobber per stk (eller nil). Svar: rapporten som lagres og vises
 function Logic.Report(s, now, price, skillEnd, who)
   local secs = math.max(0, now - s.started)

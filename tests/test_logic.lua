@@ -114,3 +114,23 @@ zl, scope, total = Logic.ZoneFish(zz, "Elwynn Forest", "Northshire Valley")
 check(scope == "zone" and total == 6 and zl[1].n == 5, "nytt underområde: hele sonen")
 zl, scope = Logic.ZoneFish(zz, "Durotar", "")
 check(#zl == 0, "ingenting fanget her")
+
+-- Hva som kan fanges: databasen først, så egen fangst som ikke står der
+local fd = {
+  ["Stormwind City"] = { { 6289, 0.5 }, { 6308, 0.3 }, { 6291, 0.18 }, { 858, 0.005 } },
+  ["Elwynn Forest / Crystal Lake"] = { { 6291, 0.6 }, { 6289, 0.4 } },
+  ["Elwynn Forest"] = { { 6291, 0.59 } },
+}
+local own = { ["Stormwind City / The Canals"] = { caught = 3, items = { [6289] = 2, [999002] = 1 } } }
+local al, has = Logic.AreaFish(fd, own, "Stormwind City", "The Canals")
+check(has and #al == 5, "databasen for sonen + egen ukjent fisk")
+check(al[1].id == 6289 and al[1].pct == 0.5 and al[1].caught == 2, "sjanse fra databasen, hake når du har fått den")
+check(al[2].caught == nil, "ikke fått ennå")
+check(al[5].id == 999002 and al[5].own and al[5].caught == 1, "egen fangst som ikke står i databasen kommer sist")
+al = Logic.AreaFish(fd, {}, "Elwynn Forest", "Crystal Lake")
+check(#al == 2 and al[1].pct == 0.6, "underområdet har egne data")
+al = Logic.AreaFish(fd, {}, "Elwynn Forest", "Goldshire")
+check(#al == 1 and al[1].pct == 0.59, "ellers sonen")
+al, has = Logic.AreaFish(fd, {}, "Durotar", "")
+check(#al == 0 and not has, "ingen data")
+check(Logic.Pct(0.42) == "42 %" and Logic.Pct(0.007) == "0,7 %" and Logic.Pct(0.005) == "0,5 %", "prosent som tekst")
