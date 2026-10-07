@@ -50,6 +50,9 @@ def main():
     sat = rgb.max(2) - lo
     # Hvitt og den lyse, grå skyggen rundt «klistremerket» regnes som bakgrunn
     bg = flood((lo >= 238) | ((lo >= 165) & (sat < 22)))
+    # Små hvite lommer helt ytterst ved kanten (ikke koblet til resten av bakgrunnen) er også bakgrunn (Daniel 7. okt)
+    near = np.asarray(Image.fromarray((bg * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(9))) > 0
+    bg |= near & (lo >= 160) & (sat < 30)
 
     # Myk kant: et bånd rundt bakgrunnen. Alfa fra hvor mørk pikselen er (kanten av rammen er mørk), og fargen
     # hentes fra den mørke kanten innenfor – ellers blir det en lys glorie rundt fisken.
@@ -65,6 +68,11 @@ def main():
     inner = Image.fromarray(np.where((~bg & ~band)[..., None], rgb, 255).astype(np.uint8))
     edge_col = np.asarray(inner.filter(ImageFilter.MinFilter(9)), dtype=np.float32)
     out[band] = edge_col[band]
+    # Gjennomsiktige piksler får den mørke kantfargen, ikke hvitt: når bildet skaleres (her og i spillet),
+    # blandes fargen deres inn i kanten – hvitt ga lyse prikker rundt fisken (Daniel 7. okt)
+    far = Image.fromarray(np.where((~bg)[..., None], out, 255).astype(np.uint8)).filter(ImageFilter.MinFilter(15))
+    out[bg] = np.asarray(far, dtype=np.float32)[bg]
+    out[bg & (out.min(2) > 120)] = (34, 26, 20)
 
     rgba = np.dstack([out, alpha * 255]).astype(np.uint8)
     img = Image.fromarray(rgba, "RGBA")

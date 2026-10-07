@@ -70,20 +70,18 @@ local LAYOUT = {
   crop = { 168, 856 },
   title = 104, zone = 146, divider = 168,
   left = 362, right = 552, colw = 172,
-  head1 = 170, head2 = 290,
-  checks = 208, checkStep = 25,
-  rings = 333, ring = 44, ringStep = 52,
-  caught = 212, bar = 236, barw = 168, stats = 264,
-  rows = 333, rowStep = 20,
-  hint = 394,
-  buttons = { 642, 720 }, buttonY = 431, buttonW = 66, buttonH = 34,
-  plaqueW = 72, plaqueH = 37,
-  close = { 752, 83, 48, 24 },
+  checks = 194, checkStep = 25,
+  rings = 262, ring = 44, ringStep = 52,
+  caught = 196, bar = 220, barw = 168, stats = 248,
+  rows = 278, rowStep = 22,
+  warn = 386,
+  report = { 672, 431, 66, 34 },
+  close = { 738, 94, 44, 22 },
 }
 local S = 0.8 -- enheter per piksel i frame.tga
 local CROP_W = LAYOUT.crop[2] - LAYOUT.crop[1]
 local WIN_W, WIN_H = CROP_W * S, 512 * S
-local RINGS, ROWS = 3, 3
+local RINGS, ROWS = 3, 4
 local CENTER_X = 536
 local TITLE_X = 508 -- tittelen og sonen litt til venstre for midten (Daniel)
 
@@ -94,7 +92,7 @@ local function at(region, x, y, point)
   region:SetPoint(point or "TOPLEFT", region:GetParent(), "TOPLEFT", X(x), -px(y))
 end
 
-local f, zoneFs, hintFs, caughtFs, statsFs, barFill, barText, noLureFs
+local f, zoneFs, warnFs, caughtFs, statsFs, barFill, barText, noLureFs
 local checks, rings, rows = {}, {}, {}
 local lures = {}
 local isLure = {} -- item-ID → om det er agn (tooltipen sjekkes én gang per ting)
@@ -106,15 +104,6 @@ local function hideTip() GameTooltip:Hide() end
 ------------------------------------------------------------------------
 -- Bygging
 ------------------------------------------------------------------------
-
--- Overskrift = Daniels røde skilt (Media/lbl_<navn>.tga), midtstilt på x
-local function heading(name, x, y)
-  local t = f:CreateTexture(nil, "ARTWORK")
-  t:SetSize(px(LAYOUT.plaqueW), px(LAYOUT.plaqueH))
-  t:SetPoint("TOP", f, "TOPLEFT", X(x), -px(y))
-  t:SetTexture(M .. "lbl_" .. name .. ".tga")
-  return t
-end
 
 local function makeRing(i)
   local size = px(LAYOUT.ring)
@@ -221,11 +210,8 @@ function W.Create(cdb)
 
   -- Venstre: Klar og Agn
   local midL = LAYOUT.left + LAYOUT.colw / 2
-  heading("klar", midL, LAYOUT.head1)
   checks.pole = makeCheck(1, L.CHECK_POLE)
   checks.lure = makeCheck(2, L.CHECK_LURE)
-  checks.sound = makeCheck(3, L.CHECK_SOUND)
-  heading("agn", midL, LAYOUT.head2)
   for i = 1, RINGS do rings[i] = makeRing(i) end
   noLureFs = ns.Text(f, "GameFontNormalSmall", FADED, 11)
   at(noLureFs, LAYOUT.left + 8, LAYOUT.rings + 14)
@@ -233,7 +219,6 @@ function W.Create(cdb)
 
   -- Høyre: Fiske og Fangst
   local R = LAYOUT.right
-  heading("fiske", R + LAYOUT.colw / 2, LAYOUT.head1)
   local lbl = ns.Text(f, "GameFontNormalSmall", INK, 14)
   at(lbl, R + 4, LAYOUT.caught + 4)
   lbl:SetText(L.CAUGHT)
@@ -259,7 +244,6 @@ function W.Create(cdb)
   statsFs = ns.Text(f, "GameFontNormalSmall", FADED, 12)
   at(statsFs, R + 4, LAYOUT.stats)
 
-  heading("fangst", R + LAYOUT.colw / 2, LAYOUT.head2)
   for i = 1, ROWS do
     local r = {}
     local y = LAYOUT.rows + (i - 1) * LAYOUT.rowStep
@@ -274,22 +258,11 @@ function W.Create(cdb)
     rows[i] = r
   end
 
-  -- Nederst i pergamentet: hjelp (eller kampvarsel). På treplata: knappene.
-  hintFs = ns.Text(f, "GameFontNormalSmall", FADED, 10)
-  hintFs:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.hint))
-  hintFs:SetText(L.HINT)
-  local hintHit = CreateFrame("Frame", nil, f)
-  hintHit:SetAllPoints(hintFs)
-  hintHit:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:SetText(L.HINT_TIP, 1, 1, 1, 1, true)
-    GameTooltip:AddLine(L.SIZE_TIP, 0.7, 0.7, 0.7)
-    GameTooltip:Show()
-  end)
-  hintHit:SetScript("OnLeave", hideTip)
-  local bw, bh = px(LAYOUT.buttonW), px(LAYOUT.buttonH)
-  at(ns.IconButton(f, "lbl_rapport", bw, bh, L.BTN_REPORT, function() ns.Report.Show(1) end), LAYOUT.buttons[1], LAYOUT.buttonY)
-  at(ns.IconButton(f, "lbl_ferdig", bw, bh, L.BTN_DONE, function() ns.Stop() end), LAYOUT.buttons[2], LAYOUT.buttonY)
+  -- Nederst i pergamentet: kampvarsel (ellers tomt). På treplata: Rapport.
+  warnFs = ns.Text(f, "GameFontNormalSmall", { 0.7, 0.12, 0.08 }, 11)
+  warnFs:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.warn))
+  local rp = LAYOUT.report
+  at(ns.IconButton(f, "lbl_rapport", px(rp[3]), px(rp[4]), L.BTN_REPORT, function() ns.Report.Show(1) end), rp[1], rp[2])
 
   -- Lys som pulserer når noe mangler (agn-ringene og krysset ved Agn)
   ns.Safe("glow", function()
@@ -349,7 +322,6 @@ function W.RefreshSkill()
     _, class, subClass = Game.ItemInstant(id)
   end
   setCheck(checks.pole, class == Data.POLE_CLASS and subClass == Data.POLE_SUBCLASS)
-  setCheck(checks.sound, ns.active)
 end
 
 -- Agnene i baggen på ringene (bare utenfor kamp: sikre attributter)
@@ -446,8 +418,7 @@ end
 
 function W.CombatWarning(on)
   if not f or not f.ready then return end
-  hintFs:SetText(on and L.COMBAT_WARN or L.HINT)
-  if on then hintFs:SetTextColor(0.7, 0.12, 0.08) else hintFs:SetTextColor(FADED[1], FADED[2], FADED[3]) end
+  warnFs:SetText(on and L.COMBAT_WARN or "")
 end
 
 -- Ringene til testene
