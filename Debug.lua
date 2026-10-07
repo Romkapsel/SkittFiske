@@ -174,6 +174,9 @@ function D.Show()
   if l then ns.Print(("siste loot: fiske=%s · %s"):format(l.fishing, table.concat(l.items, ", "))) end
   if d.errors[1] then ns.Print("siste feilmelding: " .. d.errors[1]) end
   if d.ui and d.ui[1] then ns.Print("vinduet: " .. d.ui[1]) end
+  local notes = d.notes or {}
+  if notes.blocked and notes.blocked[1] then ns.Print("blokkert av spillet: " .. notes.blocked[1]) end
+  if notes.equip and notes.equip[1] then ns.Print("utstyr feilet: " .. notes.equip[1]) end
   ns.Print(("nappe-lytteren har %d kast lagret"):format(d.bite and #d.bite or 0))
 end
 
