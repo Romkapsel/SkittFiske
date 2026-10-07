@@ -17,12 +17,13 @@ SS = 2
 # Pergamentet i rammen er en oval: x 295–778, y 97–418 (tools/cut_frame.py). Treplata nede til høyre: x 605–800, y 433–462.
 LAYOUT = {
     "crop": (168, 856),
-    "title": 104, "zone": 146, "divider": 168,
-    "bar": (386, 186, 300, 28),
-    "line2": 232, "pole": 382, "lure": 470,
-    "rings": (596, 222, 40, 46),
-    "box": (392, 272, 288, 112),
-    "summary": 280, "value": 298, "rows": 320, "row_step": 19,
+    "title": 104, "zone": 144,
+    "bar": (358, 166, 300, 28),
+    "line2": 214, "pole": 354, "lure": 442,
+    "rings": (568, 204, 40, 46),
+    "list": (364, 288),
+    "summary": 258, "value": 276, "rows": 298, "row_step": 19,
+    "eye": (248, 141, 84),
     "report": (672, 431, 66, 34),
     "close": (738, 94, 44, 22),
 }
@@ -186,6 +187,16 @@ def font(names, size):
     return ImageFont.load_default()
 
 
+def render_arrow():
+    """Liten gullpil ned (nedtrekket fra området)."""
+    s = 32 * SS
+    m = arr(mask_img(s, s, lambda d: d.polygon(S([(6, 10), (26, 10), (16, 23)]), fill=255)))
+    out = np.zeros((s, s, 4), np.float32)
+    compose(out, np.zeros((s, s, 3), np.float32) + (60, 36, 16), np.clip(dilate(m, 2 * SS) - m, 0, 1))
+    compose(out, np.zeros((s, s, 3), np.float32) + (176, 120, 50), m)
+    save(out, "arrow_down.tga", (32, 32))
+
+
 def render_glow():
     """Myk, oransje glød til fiskeøyet (legges over med ADD i spillet): hvit kjerne, oransje ut mot kanten."""
     s = 128
@@ -233,7 +244,18 @@ def preview():
 
     ctext(508, L["title"], "Skitt Fiske", title, HEAD)
     ctext(508, L["zone"], "Crystal Lake, Elwynn Forest", small, (120, 96, 70))
-    d.line([P(382, L["divider"]), P(634, L["divider"])], fill=(150, 120, 80), width=1)
+    ex, ey, es = L["eye"]
+    glow = Image.open(os.path.join(OUT, "eye_glow.tga")).convert("RGBA").resize((es, es))
+    gl = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    gl.alpha_composite(glow, tuple(int(v) for v in P(ex - es / 2, ey - es / 2)))
+    base = np.asarray(img).astype(np.float32)
+    add = np.asarray(gl).astype(np.float32)
+    base[..., :3] = np.clip(base[..., :3] + add[..., :3] * add[..., 3:] / 255.0, 0, 255)
+    img = Image.fromarray(base.astype(np.uint8), "RGBA")
+    d = ImageDraw.Draw(img)
+    aw = Image.open(os.path.join(OUT, "arrow_down.tga")).convert("RGBA").resize((14, 14))
+    zw = d.textlength("Crystal Lake, Elwynn Forest", font=small)
+    img.alpha_composite(aw, tuple(int(v) for v in P(508 + zw / 2 + 4, L["zone"] + 2)))
     bx, by, bw, bh = L["bar"]
     x, y = P(bx, by)
     d.rounded_rectangle([x + 4, y + 4, x + bw - 4, y + bh - 4], radius=6, fill=(60, 44, 30))
@@ -251,18 +273,14 @@ def preview():
         d.ellipse([x + 5, y + 5, x + rs - 5, y + rs - 5], fill=colr)
         img.alpha_composite(ring.resize((rs, rs)), (int(x), int(y)))
         d.text((x + rs - 11, y + rs - 16), str((5, 3, 2)[i]), font=small, fill=(255, 255, 255))
-    x0, y0, w, h = L["box"]
-    a, b = P(x0, y0), P(x0 + w, y0 + h)
-    ov = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    ImageDraw.Draw(ov).rectangle([a, b], fill=(115, 82, 46, 20), outline=(140, 107, 69, 150))
-    img.alpha_composite(ov)
-    ctext(536, L["summary"], "Fanget 11  ·  Kast 14 · Slapp unna 1", small, (120, 96, 70))
-    ctext(536, L["value"], "Verdi 1g 4s 20c  ·  3g 12s per time", bold, HEAD)
-    for i, (t, v) in enumerate((("6 × Oily Blackmouth", "54s"), ("3 × Raw Longjaw Mud Snapper", "6c"), ("+ 2 til", "4c"))):
+    x0, w = L["list"]
+    ctext(508, L["summary"], "Fanget 11  ·  Kast 14 · Slapp unna 1", small, (120, 96, 70))
+    ctext(508, L["value"], "Verdi 1g 4s 20c  ·  3g 12s per time", bold, HEAD)
+    for i, (t, v) in enumerate((("6 × Oily Blackmouth", "54s"), ("3 × Raw Longjaw Mud Snapper", "6c"), ("2 × Raw Brilliant Smallfish", "2c"), ("+ 2 til", "4c"))):
         y = L["rows"] + i * L["row_step"]
-        if i < 2:
+        if i < 3:
             d.rectangle([P(x0 + 10, y), (P(x0 + 10, y)[0] + 16, P(x0 + 10, y)[1] + 16)], fill=(120, 140, 160))
-        d.text(P(x0 + 32, y + 1), t, font=small, fill=INK if i < 2 else (120, 96, 70))
+        d.text(P(x0 + 32, y + 1), t, font=small, fill=INK if i < 3 else (120, 96, 70))
         vw = d.textlength(v, font=small)
         d.text((P(x0 + w - 10, y)[0] - vw, P(x0, y + 1)[1]), v, font=small, fill=HEAD)
     x, y, w, h = L["report"]
@@ -283,6 +301,7 @@ if __name__ == "__main__":
     render_bar()
     render_panel()
     render_glow()
+    render_arrow()
     for old in ("plaque.tga", "button.tga"):
         if os.path.exists(os.path.join(OUT, old)):
             os.remove(os.path.join(OUT, old))

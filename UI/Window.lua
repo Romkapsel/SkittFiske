@@ -68,23 +68,23 @@ end
 
 local LAYOUT = {
   crop = { 168, 856 },
-  title = 104, zone = 146, divider = 168,
-  bar = { 386, 186, 300, 28 },          -- x, y, bredde, høyde
-  line2 = 232, pole = 382, lure = 470,   -- Stang og Agn
-  rings = { 596, 222, 40, 46 },          -- x, y, størrelse, avstand
-  box = { 392, 272, 288, 112 },          -- feltet: x, y, bredde, høyde
-  summary = 280, value = 298, rows = 320, rowStep = 19,
-  warn = 390,
+  title = 104, zone = 144,
+  bar = { 358, 166, 300, 28 },           -- x, y, bredde, høyde (der streken var)
+  line2 = 214, pole = 354, lure = 442,   -- Stang og Agn
+  rings = { 568, 204, 40, 46 },          -- x, y, størrelse, avstand
+  list = { 364, 288 },                   -- fangstlinjene: x, bredde
+  summary = 258, value = 276, rows = 298, rowStep = 19,
+  warn = 386,
   report = { 672, 431, 66, 34 },
   close = { 738, 94, 44, 22 },
-  eye = { 262, 151, 120 },               -- fiskeøyet: x, y, størrelsen på gløden
+  eye = { 248, 141, 84 },                -- midt på øyekula: x, y, størrelsen på gløden
+  drop = 300,                            -- bredden på nedtrekket fra området
 }
 local S = 0.8 -- enheter per piksel i frame.tga
 local CROP_W = LAYOUT.crop[2] - LAYOUT.crop[1]
 local WIN_W, WIN_H = CROP_W * S, 512 * S
-local RINGS, ROWS = 3, 3
-local CENTER_X = 536
-local TITLE_X = 508 -- tittelen og sonen litt til venstre for midten (Daniel)
+local RINGS, ROWS, DROP_ROWS = 3, 4, 10
+local CENTER_X = 508 -- alt midtstilt under tittelen, litt til venstre for midten av pergamentet (Daniel)
 
 local function px(v) return v * S end
 local function X(v) return (v - LAYOUT.crop[1]) * S end
@@ -93,8 +93,8 @@ local function at(region, x, y, point)
   region:SetPoint(point or "TOPLEFT", region:GetParent(), "TOPLEFT", X(x), -px(y))
 end
 
-local f, eye, zoneFs, warnFs, summaryFs, valueFs, emptyFs, barFill, barText, noLureFs
-local checks, rings, rows = {}, {}, {}
+local f, eye, drop, zoneFs, warnFs, summaryFs, valueFs, emptyFs, barFill, barText, noLureFs
+local checks, rings, rows, dropRows = {}, {}, {}, {}
 local lures = {}
 local isLure = {} -- item-ID → om det er agn (tooltipen sjekkes én gang per ting)
 local pulses = {}
@@ -163,22 +163,6 @@ local function makeCheck(x, label)
   return c
 end
 
--- En tynn ramme rundt feltet med fangsten
-local function box()
-  local x, y, w, h = unpack(LAYOUT.box)
-  local fill = f:CreateTexture(nil, "BORDER")
-  fill:SetColorTexture(0.45, 0.32, 0.18, 0.08)
-  fill:SetSize(px(w), px(h))
-  at(fill, x, y)
-  local edges = { { x, y, w, 1 }, { x, y + h, w, 1 }, { x, y, 1, h }, { x + w, y, 1, h + 1 } }
-  for _, e in ipairs(edges) do
-    local t = f:CreateTexture(nil, "ARTWORK")
-    t:SetColorTexture(0.55, 0.42, 0.27, 0.6)
-    t:SetSize(math.max(1, px(e[3])), math.max(1, px(e[4])))
-    at(t, e[1], e[2])
-  end
-end
-
 function W.Create(cdb)
   if f then return f end
   f = CreateFrame("Frame", "SkittFiskeWindow", UIParent)
@@ -223,14 +207,27 @@ function W.Create(cdb)
   eye:Hide()
 
   local title = ns.Text(f, "GameFontNormalLarge", HEAD, 27, ns.FONT_TITLE)
-  title:SetPoint("TOP", f, "TOPLEFT", X(TITLE_X), -px(LAYOUT.title))
+  title:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.title))
   title:SetText(L.TITLE)
   zoneFs = ns.Text(f, "GameFontNormalSmall", FADED, 10)
-  zoneFs:SetPoint("TOP", f, "TOPLEFT", X(TITLE_X), -px(LAYOUT.zone))
-  local line = f:CreateTexture(nil, "ARTWORK")
-  line:SetColorTexture(0.59, 0.47, 0.31, 0.7)
-  line:SetSize(px(252), 1)
-  line:SetPoint("TOP", f, "TOPLEFT", X(TITLE_X), -px(LAYOUT.divider))
+  zoneFs:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.zone))
+  -- Nedtrekk fra området: klikk på navnet (eller pila) for fisken som er fanget her
+  local zoneHit = CreateFrame("Button", nil, f)
+  zoneHit:SetPoint("TOPLEFT", zoneFs, "TOPLEFT", -px(6), px(3))
+  zoneHit:SetPoint("BOTTOMRIGHT", zoneFs, "BOTTOMRIGHT", px(22), -px(3))
+  zoneHit:RegisterForClicks("LeftButtonUp")
+  zoneHit:SetScript("OnClick", function() W.ToggleDrop() end)
+  zoneHit:SetScript("OnEnter", function(self)
+    zoneFs:SetTextColor(HEAD[1], HEAD[2], HEAD[3])
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText(L.DROP_TIP, 1, 1, 1)
+    GameTooltip:Show()
+  end)
+  zoneHit:SetScript("OnLeave", function() zoneFs:SetTextColor(FADED[1], FADED[2], FADED[3]) hideTip() end)
+  local arrow = f:CreateTexture(nil, "OVERLAY")
+  arrow:SetSize(px(14), px(14))
+  arrow:SetPoint("LEFT", zoneFs, "RIGHT", px(4), 0)
+  arrow:SetTexture(M .. "arrow_down.tga")
 
   local c = LAYOUT.close
   at(ns.IconButton(f, "btn_close", px(c[3]), px(c[4]), L.BTN_DONE, function() ns.Stop() end), c[1], c[2]) -- vinduet åpent = du fisker
@@ -262,7 +259,6 @@ function W.Create(cdb)
   noLureFs:SetText(L.LURE_NONE_IN_BAGS)
 
   -- 3) Feltet: fanget, kast, verdi og fangsten med verdi per fisk – oppdateres mens du fisker
-  box()
   summaryFs = ns.Text(f, "GameFontNormalSmall", FADED, 11)
   summaryFs:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.summary))
   valueFs = ns.Text(f, "GameFontNormal", HEAD, 13)
@@ -270,7 +266,7 @@ function W.Create(cdb)
   emptyFs = ns.Text(f, "GameFontNormalSmall", FADED, 11)
   emptyFs:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.rows + 4))
   emptyFs:SetText(L.CATCH_EMPTY)
-  local x0, _, w = unpack(LAYOUT.box)
+  local x0, w = unpack(LAYOUT.list)
   for i = 1, ROWS do
     local r = {}
     local y = LAYOUT.rows + (i - 1) * LAYOUT.rowStep
@@ -309,6 +305,8 @@ function W.Create(cdb)
     end
   end)
 
+  ns.Safe("nedtrekk", W.CreateDrop)
+
   f:SetScript("OnUpdate", function(self, el)
     self.tick = (self.tick or 0) + el
     if self.tick >= 1 then self.tick = 0 W.RefreshLure() end
@@ -344,6 +342,7 @@ function W.RefreshSkill()
   end
   local z, sub = Game.Zone()
   zoneFs:SetText((sub ~= "" and sub ~= z) and (sub .. ", " .. z) or z)
+  W.RefreshDrop()
   -- Stang på?
   local id = Game.Equipped(Data.MAIN_HAND)
   local class, subClass
@@ -404,6 +403,7 @@ end
 -- Feltet: regnes som rapporten (samme priser), så tallene her og i rapporten er like
 function W.RefreshCatch(cdb)
   if not f or not f.ready then return end
+  W.RefreshDrop()
   local s = cdb.session
   local r = s and Logic.Report(s, Game.Clock(), ns.Session.Price) or nil
   local items = r and r.items or {}
@@ -452,6 +452,79 @@ function W.CombatWarning(on)
   warnFs:SetText(on and L.COMBAT_WARN or "")
 end
 
+------------------------------------------------------------------------
+-- Nedtrekket: fisken som er fanget i området du står i (fra SkittFiskeDB.zones – alle dine karakterer)
+------------------------------------------------------------------------
+
+function W.CreateDrop()
+  drop = CreateFrame("Frame", nil, f)
+  drop:SetFrameLevel((f:GetFrameLevel() or 1) + 20)
+  drop:SetSize(px(LAYOUT.drop), 40)
+  drop:SetPoint("TOP", zoneFs, "BOTTOM", 0, -px(6))
+  drop:EnableMouse(true)
+  local bg = drop:CreateTexture(nil, "BACKGROUND")
+  bg:SetPoint("TOPLEFT", 1, -1)
+  bg:SetPoint("BOTTOMRIGHT", -1, 1)
+  bg:SetColorTexture(0.93, 0.88, 0.77, 0.98)
+  local edge = drop:CreateTexture(nil, "BORDER")
+  edge:SetAllPoints()
+  edge:SetColorTexture(0.45, 0.32, 0.18, 1)
+  drop.head = ns.Text(drop, "GameFontNormal", HEAD, 12)
+  drop.head:SetPoint("TOP", 0, -px(8))
+  drop.empty = ns.Text(drop, "GameFontNormalSmall", FADED, 11)
+  drop.empty:SetPoint("TOP", drop.head, "BOTTOM", 0, -px(6))
+  drop.empty:SetWidth(px(LAYOUT.drop - 24))
+  drop.empty:SetText(L.DROP_EMPTY)
+  for i = 1, DROP_ROWS do
+    local r = {}
+    local y = -px(30 + (i - 1) * 19)
+    r.icon = drop:CreateTexture(nil, "ARTWORK")
+    r.icon:SetSize(px(16), px(16))
+    r.icon:SetPoint("TOPLEFT", px(12), y)
+    r.text = ns.Text(drop, "GameFontNormalSmall", INK, 11)
+    r.text:SetPoint("TOPLEFT", px(34), y - px(2))
+    r.text:SetWidth(px(LAYOUT.drop - 100))
+    r.text:SetJustifyH("LEFT")
+    if r.text.SetWordWrap then r.text:SetWordWrap(false) end
+    r.pct = ns.Text(drop, "GameFontNormalSmall", HEAD, 11)
+    r.pct:SetPoint("TOPRIGHT", -px(12), y - px(2))
+    dropRows[i] = r
+  end
+  drop:Hide()
+end
+
+function W.RefreshDrop()
+  if not drop or not drop:IsShown() and not drop.opening then return end
+  local z, sub = Game.Zone()
+  local list, scope = Logic.ZoneFish(ns.db and ns.db.zones or {}, z, sub)
+  drop.head:SetText(scope == "zone" and L.DROP_ZONE:format(z) or L.DROP_HERE:format((sub ~= "" and sub) or z))
+  drop.empty:SetShown(#list == 0)
+  for i, r in ipairs(dropRows) do
+    local it = list[i]
+    if it then
+      r.icon:SetTexture(Game.ItemIcon(it.id))
+      r.text:SetText(Game.ItemName(it.id) or ("#" .. it.id))
+      r.pct:SetText(L.DROP_PCT:format(math.floor(it.pct * 100 + 0.5)))
+      r.icon:Show() r.text:Show() r.pct:Show()
+    else
+      r.icon:Hide() r.text:Hide() r.pct:Hide()
+    end
+  end
+  local n = math.min(#list, DROP_ROWS)
+  drop:SetHeight(px(n > 0 and (36 + n * 19) or 60))
+end
+
+function W.ToggleDrop()
+  if not drop then return end
+  if drop:IsShown() then drop:Hide() return end
+  drop.opening = true
+  W.RefreshDrop()
+  drop.opening = nil
+  drop:Show()
+end
+
+function W.DropShown() return drop and drop:IsShown() end
+
 -- Fiskeøyet lyser og pulserer (venter på at nappe-lytteren finner et signal; /skitt øye viser det i 5 s)
 function W.EyeGlow(on)
   if not f or not f.ready then return end
@@ -477,6 +550,7 @@ end
 function W.Hide()
   if not f then return end
   if Game.InCombat() then ns.Queue("window", false) return end
+  if drop then drop:Hide() end
   f:Hide()
 end
 

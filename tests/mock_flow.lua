@@ -96,6 +96,13 @@ local rw = NS.Window.Rows()
 check(rw[1].text.text == "1 × Oily Blackmouth" and rw[1].value.text == "4c", "mest verdifulle fisk først, med verdi")
 check(rw[2].text.text == "3 × Raw Brilliant Smallfish" and rw[2].value.text == "3c", "andre fisk")
 
+-- Nedtrekket fra området: fisken fanget her, med andel
+check(not NS.Window.DropShown(), "nedtrekket er lukket")
+NS.Window.ToggleDrop()
+check(NS.Window.DropShown(), "klikk på området åpner nedtrekket")
+NS.Window.ToggleDrop()
+check(not NS.Window.DropShown(), "og lukker det")
+
 -- Agn: hvert agn i baggen får sin egen ring; klikk = agnet på stanga
 local rings = NS.Window.Rings()
 check(#rings == 3, "tre agn-ringer")

@@ -100,3 +100,17 @@ check(Logic.Coins(10005) == "1g 0s 5c", "gull og kobber")
 check(Logic.Coins(20000) == "2g", "rene gull")
 check(Logic.Duration(45, L) == "45 s" and Logic.Duration(600, L) == "10 min" and Logic.Duration(4500, L) == "1 t 15 min", "varighet")
 check(Logic.Left(30, L) == "30 s" and Logic.Left(61, L) == "2 min", "tid igjen")
+
+-- Nedtrekket: fisken som er fanget i området (underområdet først, ellers hele sonen)
+local zz = {
+  ["Elwynn Forest / Crystal Lake"] = { caught = 4, items = { [6291] = 3, [6303] = 1 } },
+  ["Elwynn Forest / Goldshire"] = { caught = 2, items = { [6291] = 2 } },
+  ["Stormwind City / The Canals"] = { caught = 1, items = { [6289] = 1 } },
+}
+local zl, scope, total = Logic.ZoneFish(zz, "Elwynn Forest", "Crystal Lake")
+check(scope == "sub" and total == 4 and #zl == 2, "underområdet")
+check(zl[1].id == 6291 and zl[1].n == 3 and zl[1].pct == 0.75, "flest først, med andel")
+zl, scope, total = Logic.ZoneFish(zz, "Elwynn Forest", "Northshire Valley")
+check(scope == "zone" and total == 6 and zl[1].n == 5, "nytt underområde: hele sonen")
+zl, scope = Logic.ZoneFish(zz, "Durotar", "")
+check(#zl == 0, "ingenting fanget her")

@@ -157,6 +157,32 @@ function Logic.AddZoneCatch(zones, key, loot)
   end
 end
 
+-- Fisken som er fanget i området: underområdet (f.eks. «Elwynn Forest / Crystal Lake»), ellers hele sonen.
+-- Svar: { { id, n, pct } } sortert på antall, «sub» | «zone», totalt antall
+function Logic.ZoneFish(zones, zone, sub)
+  local key = (sub and sub ~= "" and sub ~= zone) and (zone .. " / " .. sub) or zone
+  local prefix = zone .. " / "
+  local function collect(match)
+    local items, total = {}, 0
+    for k, z in pairs(zones or {}) do
+      if match(k) then
+        for id, n in pairs(z.items or {}) do items[id] = (items[id] or 0) + n total = total + n end
+      end
+    end
+    return items, total
+  end
+  local items, total = collect(function(k) return k == key end)
+  local scope = "sub"
+  if total == 0 and key ~= zone then
+    items, total = collect(function(k) return k == zone or k:sub(1, #prefix) == prefix end)
+    scope = "zone"
+  end
+  local list = {}
+  for id, n in pairs(items) do list[#list + 1] = { id = id, n = n, pct = n / total } end
+  table.sort(list, function(a, b) if a.n ~= b.n then return a.n > b.n end return a.id < b.id end)
+  return list, scope, total
+end
+
 -- price(id) → kobber per stk (eller nil). Svar: rapporten som lagres og vises
 function Logic.Report(s, now, price, skillEnd, who)
   local secs = math.max(0, now - s.started)
