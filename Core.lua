@@ -60,7 +60,7 @@ function ns.Stop()
   ns.Sound.Restore(db)
   ns.Window.CombatWarning(false)
   ns.Window.Hide()
-  if ns.Session.Stop(cdb, db) then ns.Report.Show(1) end
+  ns.Session.Stop(cdb, db) -- rapporten lagres, men vises bare når du trykker Rapport (Daniel 7. okt)
 end
 
 function ns.Toggle()

@@ -21,4 +21,4 @@ local W = NS.Window
 Fire("UNIT_SPELLCAST_CHANNEL_START", "player", "g", 7620)
 local okHide = pcall(Slash, "")
 check(okHide, "avslutt virker")
-check(NAMED.SkittFiskeReport.shown, "rapporten vises")
+check(SkittFiskeDB.history[1] ~= nil, "rapporten lagres")

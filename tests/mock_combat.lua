@@ -29,7 +29,7 @@ check(T.equip[1] == HAT and T.equip[8] == BOOTS, "rustningen venter til kampen e
 check(Chat("våpnene er på"), "du får vite at resten kommer etterpå")
 check(SkittFiskeCharDB.restorePending and SkittFiskeCharDB.saved, "det som gjenstår er husket")
 check(NAMED.SkittFiskeWindow.shown, "vinduet (med sikre knapper) skjules ikke i kamp")
-check(NAMED.SkittFiskeReport.shown, "rapporten vises likevel")
+check(SkittFiskeDB.history[1] ~= nil, "rapporten lagres likevel")
 
 -- Starte i kamp går ikke
 Slash("")

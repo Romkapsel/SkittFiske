@@ -133,8 +133,9 @@ check(SkittFiskeCharDB.saved == nil, "ingenting igjen å sette tilbake")
 for k, v in pairs(before) do check(T.cvars[k] == v, "lyden tilbake: " .. k) end
 check(SkittFiskeDB.sound == nil, "lyden er ikke husket lenger")
 check(not win.shown, "vinduet lukkes")
-local rep = NAMED.SkittFiskeReport
-check(rep and rep.shown, "rapporten vises")
+check(NAMED.SkittFiskeReport == nil or not NAMED.SkittFiskeReport.shown, "ingen rapport dukker opp når du avslutter")
+Slash("rapport")
+check(NAMED.SkittFiskeReport and NAMED.SkittFiskeReport.shown, "rapporten vises når du ber om den")
 local r = SkittFiskeDB.history[1]
 check(r and r.caught == 2 and r.casts == 1 and r.escaped == 1 and r.money == 25, "rapporten har fangsten")
 check(r.skillFrom == 120 and r.skillTo == 124, "skillen gikk opp 4")
