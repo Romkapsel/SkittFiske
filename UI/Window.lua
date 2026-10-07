@@ -72,13 +72,13 @@ local LAYOUT = {
   crop = { 168, 856 },
   title = 104, zone = 146, divider = 168,
   left = 362, right = 552, colw = 172,
-  head1 = 176, head2 = 276,
-  checks = 206, checkStep = 22,
-  rings = 304, ring = 44, ringStep = 52,
-  caught = 206, bar = 228, barw = 168, stats = 254,
-  rows = 306, rowStep = 19,
-  hint = 384,
-  buttons = { 632, 714 }, buttonY = 436, buttonW = 78, buttonH = 24,
+  head1 = 174, head2 = 284,
+  checks = 204, checkStep = 25,
+  rings = 312, ring = 44, ringStep = 52,
+  caught = 204, bar = 228, barw = 168, stats = 258,
+  rows = 312, rowStep = 23,
+  hint = 388,
+  buttons = { 650, 726 }, buttonY = 436, buttonW = 74, buttonH = 24,
   close = { 771, 85, 22 },
 }
 local S = 0.8 -- enheter per piksel i frame.tga
@@ -86,6 +86,7 @@ local CROP_W = LAYOUT.crop[2] - LAYOUT.crop[1]
 local WIN_W, WIN_H = CROP_W * S, 512 * S
 local RINGS, ROWS = 3, 3
 local CENTER_X = 536
+local TITLE_X = 508 -- tittelen og sonen litt til venstre for midten (Daniel)
 
 local function px(v) return v * S end
 local function X(v) return (v - LAYOUT.crop[1]) * S end
@@ -108,7 +109,7 @@ local function hideTip() GameTooltip:Hide() end
 ------------------------------------------------------------------------
 
 local function heading(text, x, y)
-  local fs = ns.Text(f, "GameFontNormalLarge", HEAD, 16, ns.FONT_TITLE)
+  local fs = ns.Text(f, "GameFontNormalLarge", HEAD, 19, ns.FONT_TITLE)
   fs:SetPoint("TOP", f, "TOPLEFT", X(x), -px(y))
   fs:SetText(text)
   return fs
@@ -158,14 +159,14 @@ local function makeCheck(i, label)
   local y = LAYOUT.checks + 6 + (i - 1) * LAYOUT.checkStep
   local c = {}
   c.box = f:CreateTexture(nil, "ARTWORK")
-  c.box:SetSize(px(18), px(18))
+  c.box:SetSize(px(21), px(21))
   at(c.box, LAYOUT.left + 4, y)
   c.box:SetTexture(M .. "box.tga")
   c.mark = f:CreateTexture(nil, "OVERLAY")
-  c.mark:SetSize(px(18), px(18))
+  c.mark:SetSize(px(21), px(21))
   at(c.mark, LAYOUT.left + 4, y)
-  c.text = ns.Text(f, "GameFontNormalSmall", INK, 12)
-  at(c.text, LAYOUT.left + 30, y + 2)
+  c.text = ns.Text(f, "GameFontNormalSmall", INK, 14)
+  at(c.text, LAYOUT.left + 33, y + 2)
   c.text:SetText(label)
   return c
 end
@@ -205,14 +206,14 @@ function W.Create(cdb)
   bg:SetTexCoord(LAYOUT.crop[1] / 1024, LAYOUT.crop[2] / 1024, 0, 1)
 
   local title = ns.Text(f, "GameFontNormalLarge", HEAD, 27, ns.FONT_TITLE)
-  title:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.title))
+  title:SetPoint("TOP", f, "TOPLEFT", X(TITLE_X), -px(LAYOUT.title))
   title:SetText(L.TITLE)
   zoneFs = ns.Text(f, "GameFontNormalSmall", FADED, 10)
-  zoneFs:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.zone))
+  zoneFs:SetPoint("TOP", f, "TOPLEFT", X(TITLE_X), -px(LAYOUT.zone))
   local line = f:CreateTexture(nil, "ARTWORK")
   line:SetColorTexture(0.59, 0.47, 0.31, 0.7)
   line:SetSize(px(252), 1)
-  line:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.divider))
+  line:SetPoint("TOP", f, "TOPLEFT", X(TITLE_X), -px(LAYOUT.divider))
 
   local c = LAYOUT.close
   at(ns.PlateButton(f, "X", px(c[3]), px(c[3]), function() ns.Stop() end, 12), c[1], c[2]) -- vinduet åpent = du fisker
@@ -232,29 +233,29 @@ function W.Create(cdb)
   -- Høyre: Fiske og Fangst
   local R = LAYOUT.right
   heading(L.PLAQUE_SKILL, R + LAYOUT.colw / 2, LAYOUT.head1)
-  local lbl = ns.Text(f, "GameFontNormalSmall", INK, 12)
+  local lbl = ns.Text(f, "GameFontNormalSmall", INK, 14)
   at(lbl, R + 4, LAYOUT.caught + 4)
   lbl:SetText(L.CAUGHT)
-  caughtFs = ns.Text(f, "GameFontNormal", HEAD, 13)
+  caughtFs = ns.Text(f, "GameFontNormal", HEAD, 15)
   caughtFs:SetPoint("TOPRIGHT", f, "TOPLEFT", X(R + LAYOUT.barw - 4), -px(LAYOUT.caught + 3))
 
   local barBg = f:CreateTexture(nil, "ARTWORK")
   barBg:SetPoint("TOPLEFT", f, "TOPLEFT", X(R + 3), -px(LAYOUT.bar + 5))
-  barBg:SetSize(px(LAYOUT.barw - 6), px(16))
+  barBg:SetSize(px(LAYOUT.barw - 6), px(19))
   barBg:SetColorTexture(0.24, 0.17, 0.12, 0.95)
   barFill = f:CreateTexture(nil, "ARTWORK", nil, 1)
   barFill:SetPoint("TOPLEFT", barBg, "TOPLEFT")
-  barFill:SetHeight(px(16))
+  barFill:SetHeight(px(19))
   barFill:SetColorTexture(0.34, 0.55, 0.24, 1)
   barFill.full = px(LAYOUT.barw - 6)
   local barFrame = f:CreateTexture(nil, "OVERLAY")
   barFrame:SetPoint("TOPLEFT", f, "TOPLEFT", X(R), -px(LAYOUT.bar + 2))
-  barFrame:SetSize(px(LAYOUT.barw), px(22))
+  barFrame:SetSize(px(LAYOUT.barw), px(25))
   barFrame:SetTexture(M .. "bar_frame.tga")
-  barText = ns.Text(f, "GameFontNormalSmall", { 1, 0.98, 0.92 }, 10, nil, true)
+  barText = ns.Text(f, "GameFontNormalSmall", { 1, 0.98, 0.92 }, 12, nil, true)
   barText:SetPoint("CENTER", barBg, "CENTER", 0, 0)
 
-  statsFs = ns.Text(f, "GameFontNormalSmall", FADED, 10)
+  statsFs = ns.Text(f, "GameFontNormalSmall", FADED, 12)
   at(statsFs, R + 4, LAYOUT.stats)
 
   heading(L.PLAQUE_CATCH, R + LAYOUT.colw / 2, LAYOUT.head2)
@@ -262,11 +263,11 @@ function W.Create(cdb)
     local r = {}
     local y = LAYOUT.rows + (i - 1) * LAYOUT.rowStep
     r.icon = f:CreateTexture(nil, "ARTWORK")
-    r.icon:SetSize(px(15), px(15))
+    r.icon:SetSize(px(19), px(19))
     at(r.icon, R + 4, y + 1)
-    r.text = ns.Text(f, "GameFontNormalSmall", INK, 10)
-    at(r.text, R + 24, y + 2)
-    r.text:SetWidth(px(LAYOUT.colw - 30))
+    r.text = ns.Text(f, "GameFontNormalSmall", INK, 12)
+    at(r.text, R + 28, y + 3)
+    r.text:SetWidth(px(LAYOUT.colw - 36))
     r.text:SetJustifyH("LEFT")
     if r.text.SetWordWrap then r.text:SetWordWrap(false) end
     rows[i] = r

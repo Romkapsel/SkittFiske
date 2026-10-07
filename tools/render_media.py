@@ -19,13 +19,13 @@ LAYOUT = {
     "crop": (168, 856),
     "title": 104, "zone": 146, "divider": 168,
     "left": 362, "right": 552, "colw": 172,
-    "head1": 176, "head2": 276,
-    "checks": 206, "check_step": 22,
-    "rings": 304, "ring": 44, "ring_step": 52,
-    "caught": 206, "bar": 228, "barw": 168, "stats": 254,
-    "rows": 306, "row_step": 19,
-    "hint": 384,
-    "buttons": (632, 714), "button_y": 436, "button_w": 78, "button_h": 24,
+    "head1": 174, "head2": 284,
+    "checks": 204, "check_step": 25,
+    "rings": 312, "ring": 44, "ring_step": 52,
+    "caught": 204, "bar": 228, "barw": 168, "stats": 258,
+    "rows": 312, "row_step": 23,
+    "hint": 388,
+    "buttons": (650, 726), "button_y": 436, "button_w": 74, "button_h": 24,
     "close": (771, 85, 22),
 }
 INK = (70, 44, 22)
@@ -218,9 +218,9 @@ def preview():
     box = Image.open(os.path.join(OUT, "box.tga")).resize((18, 18))
     barf = Image.open(os.path.join(OUT, "bar_frame.tga")).resize((L["barw"], 22))
 
-    ctext(536, L["title"], "Skitt Fiske", title, HEAD)
-    ctext(536, L["zone"], "Crystal Lake, Elwynn Forest", small, (120, 96, 70))
-    d.line([P(410, L["divider"]), P(662, L["divider"])], fill=(150, 120, 80), width=1)
+    ctext(508, L["title"], "Skitt Fiske", title, HEAD)
+    ctext(508, L["zone"], "Crystal Lake, Elwynn Forest", small, (120, 96, 70))
+    d.line([P(382, L["divider"]), P(634, L["divider"])], fill=(150, 120, 80), width=1)
     ctext(L["left"] + L["colw"] / 2, L["head1"], "Klar", head, HEAD)
     for i, t in enumerate(("Stang", "Agn  6 min", "Lyd")):
         y = L["checks"] + 6 + i * L["check_step"]
