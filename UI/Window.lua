@@ -76,7 +76,7 @@ local LAYOUT = {
   pole = 92, lure = 124,                -- bredden på Stang- og Agn-plassen
   rings = { 323, 44, 48 },               -- y, størrelse, avstand
   warn = 386,
-  report = { 672, 431, 66, 34 },
+  report = { 712, 430, 54, 27 },          -- midt på den glatte delen av treplata (x 660–800, y 428–458)
   close = { 738, 94, 44, 22 },
   drop = 380,                            -- bredden på nedtrekket fra området
 }
