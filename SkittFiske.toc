@@ -1,0 +1,20 @@
+## Interface: 16001
+## Title: Skitt Fiske
+## Notes: Ett trykk: fiskeutstyret på, lyden opp og fangsten telles. Ett trykk til: alt som før, og en rapport.
+## Author: Daniel
+## Version: 0.1.0
+## SavedVariables: SkittFiskeDB
+## SavedVariablesPerCharacter: SkittFiskeCharDB
+
+Locale\nbNO.lua
+Data.lua
+Logic.lua
+Game.lua
+Gear.lua
+Sound.lua
+Cast.lua
+Session.lua
+UI\Window.lua
+UI\Report.lua
+Core.lua
+Debug.lua
