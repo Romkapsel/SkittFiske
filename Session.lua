@@ -18,6 +18,20 @@ function Session.Start(cdb)
 end
 
 ------------------------------------------------------------------------
+-- Tiden står stille mens du er logget ut: pausen trekkes fra når du logger inn igjen (7. okt: en økt fikk 5 t)
+function Session.Pause(cdb)
+  if cdb.session then cdb.session.pausedAt = Game.Clock() end
+end
+
+function Session.Resume(cdb)
+  local s = cdb.session
+  if s and s.pausedAt then
+    s.started = s.started + math.max(0, Game.Clock() - s.pausedAt)
+    s.pausedAt = nil
+  end
+end
+
+------------------------------------------------------------------------
 -- Pris: normalkursen fra Sparkmack's kursbok etter 5 % AH-avgift, ellers det vendoren betaler
 ------------------------------------------------------------------------
 
@@ -47,11 +61,13 @@ end
 function Session.Stop(cdb, db)
   local s = cdb.session
   if not s then return nil end
+  cdb.session = nil
+  -- En økt uten kast er ingen fisketur (knappen trykket to ganger): ingen rapport
+  if (s.casts or 0) == 0 and (s.caught or 0) == 0 then return nil end
   local r = Logic.Report(s, Game.Clock(), Session.Price, (Game.Skill()), Game.try(UnitName, "player"))
   r.sparkmack = Session.HasSparkmack()
   db.history = db.history or {}
   Logic.PushHistory(db.history, r, ns.Data.HISTORY_MAX)
-  cdb.session = nil
   return r
 end
 
@@ -66,7 +82,7 @@ function Session.OnChannelStart(cdb, spellId)
   if not Game.IsFishingSpell(spellId, name) then return end
   ns.Debug.Count("channel")
   if s then s.casts = s.casts + 1 end
-  if ns.active then ns.Debug.BiteStart() end
+  if ns.active and ns.db and ns.db.biteProbe then ns.Debug.BiteStart() end -- bare med /skitt debug nappe
 end
 
 local lootOpen, moneyBefore, pending

@@ -38,6 +38,13 @@
 
 | # | Svar | Dato / build |
 |---|---|---|
+| V1 | Ja: laster, makroen lages. | 7. okt, beta build 70245, Tannan |
+| V2 | Ja: stanga (Fishing Pole) funnet og tatt på. | 7. okt, 70245 |
+| V3 | **Ja**: 143 høyreklikk, 39 dobbeltklikk → 39 klikk på kast-knappen → 39 kast. Override-bindingen på BUTTON2 virker. | 7. okt, 70245 |
+| V4 | Ja: `IsFishingLoot()` = true, loot leses. Fangst per område lagres (Stormwind City / The Canals). | 7. okt, 70245 |
+| V5 | Ingen fisk slapp unna i testen; feilmeldingene er `ERR_FISH_ESCAPED` «Your fish got away!» og `ERR_FISH_NOT_HOOKED` «No fish are hooked.». Ellers sett: «You can't use that here.». | 7. okt, 70245 |
+| V6 | Ikke testet (ingen agn i baggen). `GetWeaponEnchantInfo` svarer `false` uten agn. | 7. okt, 70245 |
+| V9 | **Nei.** 8 kast logget: ingen hendelse kommer før høyreklikket på duppen (eneste i 3 s før: tilfeldige `SPELL_UPDATE_USABLE`, `CURSOR_CHANGED`). Rekkefølgen ved fangst: GLOBAL_MOUSE_DOWN → +0,35 s CHANNEL_STOP → LOOT_READY → +0,3 s LOOT_OPENED. `softinteract` ga ingenting. Nappe-lytteren er nå av (slås på med `/skitt debug nappe`). | 7. okt, 70245 |
 
 ## 4. Beslutningslogg
 

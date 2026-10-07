@@ -2,6 +2,7 @@
 T.equip = { [16] = SWORD }
 Put(POLE)
 Login()
+Slash("debug nappe") -- lytteren er av til den slås på
 Slash("")
 
 Fire("UNIT_SPELLCAST_CHANNEL_START", "player", "g", 7620)

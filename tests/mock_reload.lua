@@ -41,3 +41,14 @@ WorldFrame.hooks = {}
 LoadAddon()
 Login()
 check(T.cvars.Sound_MusicVolume == "0.6" and SkittFiskeDB.sound == nil, "lyden settes tilbake for en karakter som ikke fisker")
+
+-- Tiden står stille mens du er logget ut
+Slash("")
+local started = SkittFiskeCharDB.session.started
+Fire("PLAYER_LOGOUT")
+T.clock = T.clock + 5 * 3600
+T.handlers = {}
+WorldFrame.hooks = {}
+LoadAddon()
+Login()
+check(SkittFiskeCharDB.session.started == started + 5 * 3600, "5 timer utlogget teller ikke som fisketid")

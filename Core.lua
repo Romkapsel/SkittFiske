@@ -94,6 +94,7 @@ on.PLAYER_LOGIN = function()
     -- Fortsett der du slapp (etter /reload eller utlogging midt i fiskingen)
     ns.active = true
     ns.Sound.Apply(db)
+    ns.Session.Resume(cdb)
     ns.Session.Start(cdb)
     ns.Window.Show()
     ns.Window.Refresh(cdb)
@@ -106,6 +107,7 @@ end
 -- Lyden tilbake når du logger ut midt i fiskingen; den settes på igjen neste gang du logger inn
 on.PLAYER_LOGOUT = function()
   if ns.active then ns.Sound.Restore(db) end
+  ns.Session.Pause(cdb)
 end
 
 on.PLAYER_REGEN_DISABLED = function()
@@ -179,5 +181,8 @@ SlashCmdList.SKITTFISKE = function(msg)
   elseif msg == "debug" then ns.Debug.Show()
   elseif msg == "øye" then ns.Window.EyeGlow(true) if C_Timer then C_Timer.After(5, function() ns.Window.EyeGlow(false) end) end
   elseif msg == "debug tøm" then ns.Debug.Clear()
+  elseif msg == "debug nappe" then
+    db.biteProbe = not db.biteProbe
+    ns.Print(db.biteProbe and "nappe-lytteren er på." or "nappe-lytteren er av.")
   else ns.Print(L.HELP) end
 end

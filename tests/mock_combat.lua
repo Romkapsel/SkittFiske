@@ -20,7 +20,8 @@ UnitChannelInfo = function() return SECRET end
 check(NS.Game.IsFishing() == false, "hemmelig kast-info: regnes som ikke fisking")
 UnitChannelInfo = oldChannel
 
--- Avslutt midt i kampen
+-- Avslutt midt i kampen (etter ett kast, så det blir en rapport)
+Fire("UNIT_SPELLCAST_CHANNEL_START", "player", "g", 7620)
 local ok, err = pcall(Slash, "")
 check(ok, "avslutning i kamp feiler ikke: " .. tostring(err))
 check(T.equip[16] == SWORD and T.equip[17] == SHIELD, "våpnene er på med en gang")

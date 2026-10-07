@@ -18,6 +18,7 @@ check(pcall(NS.Window.RefreshLure), "agnet lyser uten animasjon")
 
 -- Vinduet ble aldri bygget (alt feiler): ingenting annet skal krasje
 local W = NS.Window
+Fire("UNIT_SPELLCAST_CHANNEL_START", "player", "g", 7620)
 local okHide = pcall(Slash, "")
 check(okHide, "avslutt virker")
 check(NAMED.SkittFiskeReport.shown, "rapporten vises")

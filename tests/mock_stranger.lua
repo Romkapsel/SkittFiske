@@ -17,9 +17,9 @@ Slash("")
 RunTimers(2)
 check(T.equip[1] == HELM, "tilbake")
 local r = SkittFiskeDB.history[1]
-check(r and r.caught == 0 and r.skillFrom == nil, "tom rapport uten skill")
-local lines = NS.Report.Lines(r)
-check(lines[#lines].left == "Ingenting på kroken denne gangen.", "«Ingenting på kroken»")
+check(r == nil, "en økt uten kast gir ingen rapport")
+check(NS.Report.Lines({ secs = 60, casts = 3, caught = 0, items = {}, money = 0, total = 0 })[5].left
+  == "Ingenting på kroken denne gangen.", "«Ingenting på kroken» når du kastet uten fangst")
 
 -- Med Sparkmack: normalkurs i kursboka for markedet du står i
 SparkmackDB = { hist = { ["Annen Realm|Horde"] = { fmt = 2 } } }
