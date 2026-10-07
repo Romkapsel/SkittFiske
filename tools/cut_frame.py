@@ -43,6 +43,21 @@ def flood(mask):
     return seen
 
 
+def grow(seed, mask):
+    """seed utvidet med alle piksler i mask som henger sammen med den."""
+    h, w = seed.shape
+    out = seed.copy()
+    q = deque(zip(*np.nonzero(seed)))
+    while q:
+        y, x = q.popleft()
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            ny, nx = y + dy, x + dx
+            if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not out[ny, nx]:
+                out[ny, nx] = True
+                q.append((ny, nx))
+    return out
+
+
 def main():
     im = Image.open(SRC).convert("RGB")
     rgb = np.asarray(im).astype(np.float32)
@@ -53,6 +68,11 @@ def main():
     # Små hvite lommer helt ytterst ved kanten (ikke koblet til resten av bakgrunnen) er også bakgrunn (Daniel 7. okt)
     near = np.asarray(Image.fromarray((bg * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(9))) > 0
     bg |= near & (lo >= 160) & (sat < 30)
+    # Hvite lommer i finnetuppene ligger litt lenger inn (bak en tynn, mørk strek): vokser fra bakgrunnen
+    # gjennom nesten hvite piksler, og hopper over streker på inntil 4 px
+    for _ in range(3):
+        near = np.asarray(Image.fromarray((bg * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(9))) > 0
+        bg = grow(bg | (near & (lo >= 205) & (sat < 30)), (lo >= 205) & (sat < 30))
 
     # Myk kant: et bånd rundt bakgrunnen. Alfa fra hvor mørk pikselen er (kanten av rammen er mørk), og fargen
     # hentes fra den mørke kanten innenfor – ellers blir det en lys glorie rundt fisken.
@@ -65,8 +85,10 @@ def main():
     a_band = np.clip((dark - 8.0) / 170.0, 0, 1)
     alpha[band] = a_band[band]
     out = rgb.copy()
-    inner = Image.fromarray(np.where((~bg & ~band)[..., None], rgb, 255).astype(np.uint8))
-    edge_col = np.asarray(inner.filter(ImageFilter.MinFilter(9)), dtype=np.float32)
+    # Mørkeste farge fra fisken (ikke bakgrunnen) like ved. På tynne finnetupper er alt kant, så kanten selv er med –
+    # ellers fantes det ingen farge å hente, og tuppen ble hvit (Daniel 7. okt)
+    solid = Image.fromarray(np.where((~bg)[..., None], rgb, 255).astype(np.uint8))
+    edge_col = np.minimum(np.asarray(solid.filter(ImageFilter.MinFilter(5)), dtype=np.float32), rgb)
     out[band] = edge_col[band]
     # Gjennomsiktige piksler får den mørke kantfargen, ikke hvitt: når bildet skaleres (her og i spillet),
     # blandes fargen deres inn i kanten – hvitt ga lyse prikker rundt fisken (Daniel 7. okt)

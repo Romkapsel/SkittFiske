@@ -88,6 +88,13 @@ check(SkittFiskeDB.zones["Elwynn Forest / Crystal Lake"].caught == 2, "fangsten 
 Fire("UI_ERROR_MESSAGE", 51, "Your fish got away!")
 Fire("UI_ERROR_MESSAGE", 52, "No fish are hooked.")
 check(s.escaped == 1 and s.missed == 1, "slapp unna og for tidlig telles")
+-- Feltet i vinduet oppdateres mens du fisker: fanget, kast, verdi og fisken med verdi
+local tx = NS.Window.Texts()
+check(tx.summary.text == "Fanget 2  ·  Kast 1 · Slapp unna 1", "feltet: fanget og kast (" .. tostring(tx.summary.text) .. ")")
+check(tx.value.text and tx.value.text:find("Verdi 32c", 1, true), "feltet: verdi (" .. tostring(tx.value.text) .. ")")
+local rw = NS.Window.Rows()
+check(rw[1].text.text == "1 × Oily Blackmouth" and rw[1].value.text == "4c", "mest verdifulle fisk først, med verdi")
+check(rw[2].text.text == "3 × Raw Brilliant Smallfish" and rw[2].value.text == "3c", "andre fisk")
 
 -- Agn: hvert agn i baggen får sin egen ring; klikk = agnet på stanga
 local rings = NS.Window.Rings()

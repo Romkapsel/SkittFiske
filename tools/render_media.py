@@ -18,11 +18,11 @@ SS = 2
 LAYOUT = {
     "crop": (168, 856),
     "title": 104, "zone": 146, "divider": 168,
-    "left": 362, "right": 552, "colw": 172,
-    "checks": 194, "check_step": 25,
-    "rings": 262, "ring": 44, "ring_step": 52,
-    "caught": 196, "bar": 220, "barw": 168, "stats": 248,
-    "rows": 278, "row_step": 22,
+    "bar": (386, 186, 300, 28),
+    "line2": 232, "pole": 382, "lure": 470,
+    "rings": (596, 222, 40, 46),
+    "box": (392, 272, 288, 112),
+    "summary": 280, "value": 298, "rows": 320, "row_step": 19,
     "report": (672, 431, 66, 34),
     "close": (738, 94, 44, 22),
 }
@@ -211,39 +211,45 @@ def preview():
         w = d.textlength(t, font=f)
         d.text((P(x, y)[0] - w / 2, P(x, y)[1]), t, font=f, fill=fill)
 
-    ring = Image.open(os.path.join(OUT, "ring.tga")).resize((L["ring"], L["ring"]))
+    ring = Image.open(os.path.join(OUT, "ring.tga")).convert("RGBA")
     check = Image.open(os.path.join(OUT, "check.tga")).resize((18, 18))
     box = Image.open(os.path.join(OUT, "box.tga")).resize((18, 18))
-    barf = Image.open(os.path.join(OUT, "bar_frame.tga")).resize((L["barw"], 22))
+    barf = Image.open(os.path.join(OUT, "bar_frame.tga")).convert("RGBA")
 
     ctext(508, L["title"], "Skitt Fiske", title, HEAD)
     ctext(508, L["zone"], "Crystal Lake, Elwynn Forest", small, (120, 96, 70))
     d.line([P(382, L["divider"]), P(634, L["divider"])], fill=(150, 120, 80), width=1)
-    for i, t in enumerate(("Stang", "Agn  6 min")):
-        y = L["checks"] + 6 + i * L["check_step"]
-        img.alpha_composite(box, tuple(int(v) for v in P(L["left"] + 4, y)))
-        img.alpha_composite(check, tuple(int(v) for v in P(L["left"] + 4, y)))
-        d.text(P(L["left"] + 33, y - 1), t, font=txt, fill=INK)
+    bx, by, bw, bh = L["bar"]
+    x, y = P(bx, by)
+    d.rounded_rectangle([x + 4, y + 4, x + bw - 4, y + bh - 4], radius=6, fill=(60, 44, 30))
+    d.rounded_rectangle([x + 4, y + 4, x + 4 + (bw - 8) * 0.5, y + bh - 4], radius=6, fill=(86, 140, 60))
+    img.alpha_composite(barf.resize((bw, bh)), (int(x), int(y)))
+    ctext(bx + bw / 2, by + 5, "Fiske 75/150  +25", txt, (255, 250, 235))
+    for x0, t in ((L["pole"], "Stang"), (L["lure"], "Agn  6 min")):
+        b = box.resize((21, 21))
+        img.alpha_composite(b, tuple(int(v) for v in P(x0, L["line2"])))
+        img.alpha_composite(check.resize((21, 21)), tuple(int(v) for v in P(x0, L["line2"])))
+        d.text(P(x0 + 27, L["line2"] + 1), t, font=txt, fill=INK)
+    rx, ry, rs, rstep = L["rings"]
     for i, colr in enumerate(((200, 120, 140), (110, 170, 200), (170, 120, 220))):
-        x, y = P(L["left"] + 18 + i * L["ring_step"], L["rings"])
-        d.ellipse([x + 6, y + 6, x + L["ring"] - 6, y + L["ring"] - 6], fill=colr)
-        img.alpha_composite(ring, (int(x), int(y)))
-        d.text((x + L["ring"] - 12, y + L["ring"] - 18), str((5, 3, 2)[i]), font=bold, fill=(255, 255, 255))
-
-    R = L["right"]
-    d.text(P(R + 4, L["caught"] + 4), "Fanget", font=txt, fill=INK)
-    d.text(P(R + L["barw"] - 18, L["caught"] + 3), "13", font=bold, fill=HEAD)
-    bx, by = P(R, L["bar"] + 2)
-    d.rounded_rectangle([bx + 3, by + 3, bx + L["barw"] - 3, by + 19], radius=5, fill=(60, 44, 30))
-    d.rounded_rectangle([bx + 3, by + 3, bx + 3 + (L["barw"] - 6) * 0.8, by + 19], radius=5, fill=(86, 140, 60))
-    img.alpha_composite(barf, (int(bx), int(by)))
-    ctext(R + L["barw"] / 2, L["bar"] + 4, "Fiske 120/150  +25", small, (255, 250, 235))
-    d.text(P(R + 4, L["stats"]), "Kast 20  ·  Slapp unna 1", font=small, fill=(110, 86, 60))
-    for i, t in enumerate(("8 × Raw Brilliant Sm…", "3 × Raw Longjaw M…", "2 × Oily Blackmouth", "+ 2 til")):
+        x, y = P(rx + i * rstep, ry)
+        d.ellipse([x + 5, y + 5, x + rs - 5, y + rs - 5], fill=colr)
+        img.alpha_composite(ring.resize((rs, rs)), (int(x), int(y)))
+        d.text((x + rs - 11, y + rs - 16), str((5, 3, 2)[i]), font=small, fill=(255, 255, 255))
+    x0, y0, w, h = L["box"]
+    a, b = P(x0, y0), P(x0 + w, y0 + h)
+    ov = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    ImageDraw.Draw(ov).rectangle([a, b], fill=(115, 82, 46, 20), outline=(140, 107, 69, 150))
+    img.alpha_composite(ov)
+    ctext(536, L["summary"], "Fanget 11  ·  Kast 14 · Slapp unna 1", small, (120, 96, 70))
+    ctext(536, L["value"], "Verdi 1g 4s 20c  ·  3g 12s per time", bold, HEAD)
+    for i, (t, v) in enumerate((("6 × Oily Blackmouth", "54s"), ("3 × Raw Longjaw Mud Snapper", "6c"), ("+ 2 til", "4c"))):
         y = L["rows"] + i * L["row_step"]
-        if i < 3:
-            d.rectangle([P(R + 4, y + 1), (P(R + 4, y)[0] + 18, P(R + 4, y)[1] + 19)], fill=(120, 140, 160))
-        d.text(P(R + 28, y + 2), t, font=txt if i < 3 else small, fill=INK if i < 3 else (120, 96, 70))
+        if i < 2:
+            d.rectangle([P(x0 + 10, y), (P(x0 + 10, y)[0] + 16, P(x0 + 10, y)[1] + 16)], fill=(120, 140, 160))
+        d.text(P(x0 + 32, y + 1), t, font=small, fill=INK if i < 2 else (120, 96, 70))
+        vw = d.textlength(v, font=small)
+        d.text((P(x0 + w - 10, y)[0] - vw, P(x0, y + 1)[1]), v, font=small, fill=HEAD)
     x, y, w, h = L["report"]
     b = Image.open(os.path.join(OUT, "lbl_rapport.tga")).convert("RGBA").resize((w, h))
     img.alpha_composite(b, tuple(int(v) for v in P(x, y)))

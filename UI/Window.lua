@@ -63,25 +63,25 @@ function ns.IconButton(parent, tex, w, h, tip, onClick)
 end
 
 ------------------------------------------------------------------------
--- Mål
+-- Mål (Daniel 7. okt: vannrett – skill øverst, Stang og Agn under, så et felt med fangst og inntjening)
 ------------------------------------------------------------------------
 
 local LAYOUT = {
   crop = { 168, 856 },
   title = 104, zone = 146, divider = 168,
-  left = 362, right = 552, colw = 172,
-  checks = 194, checkStep = 25,
-  rings = 262, ring = 44, ringStep = 52,
-  caught = 196, bar = 220, barw = 168, stats = 248,
-  rows = 278, rowStep = 22,
-  warn = 386,
+  bar = { 386, 186, 300, 28 },          -- x, y, bredde, høyde
+  line2 = 232, pole = 382, lure = 470,   -- Stang og Agn
+  rings = { 596, 222, 40, 46 },          -- x, y, størrelse, avstand
+  box = { 392, 272, 288, 112 },          -- feltet: x, y, bredde, høyde
+  summary = 280, value = 298, rows = 320, rowStep = 19,
+  warn = 390,
   report = { 672, 431, 66, 34 },
   close = { 738, 94, 44, 22 },
 }
 local S = 0.8 -- enheter per piksel i frame.tga
 local CROP_W = LAYOUT.crop[2] - LAYOUT.crop[1]
 local WIN_W, WIN_H = CROP_W * S, 512 * S
-local RINGS, ROWS = 3, 4
+local RINGS, ROWS = 3, 3
 local CENTER_X = 536
 local TITLE_X = 508 -- tittelen og sonen litt til venstre for midten (Daniel)
 
@@ -92,7 +92,7 @@ local function at(region, x, y, point)
   region:SetPoint(point or "TOPLEFT", region:GetParent(), "TOPLEFT", X(x), -px(y))
 end
 
-local f, zoneFs, warnFs, caughtFs, statsFs, barFill, barText, noLureFs
+local f, zoneFs, warnFs, summaryFs, valueFs, emptyFs, barFill, barText, noLureFs
 local checks, rings, rows = {}, {}, {}
 local lures = {}
 local isLure = {} -- item-ID → om det er agn (tooltipen sjekkes én gang per ting)
@@ -106,21 +106,22 @@ local function hideTip() GameTooltip:Hide() end
 ------------------------------------------------------------------------
 
 local function makeRing(i)
-  local size = px(LAYOUT.ring)
+  local r = LAYOUT.rings
+  local size = px(r[3])
   local b = CreateFrame("Button", nil, f, "SecureActionButtonTemplate")
   b:SetSize(size, size)
-  at(b, LAYOUT.left + 18 + (i - 1) * LAYOUT.ringStep, LAYOUT.rings)
+  at(b, r[1] + (i - 1) * r[4], r[2])
   b:RegisterForClicks(Game.ClickMode()) -- bare én av dem, ellers brukes agnet to ganger
   b:SetAttribute("type", "macro")
   b.glow = b:CreateTexture(nil, "BACKGROUND")
-  b.glow:SetPoint("TOPLEFT", -px(6), px(6))
-  b.glow:SetPoint("BOTTOMRIGHT", px(6), -px(6))
+  b.glow:SetPoint("TOPLEFT", -px(5), px(5))
+  b.glow:SetPoint("BOTTOMRIGHT", px(5), -px(5))
   b.glow:SetTexture(M .. "mask_circle.tga")
   b.glow:SetVertexColor(1, 0.75, 0.2)
   b.glow:Hide()
   b.icon = b:CreateTexture(nil, "ARTWORK")
-  b.icon:SetPoint("TOPLEFT", px(6), -px(6))
-  b.icon:SetPoint("BOTTOMRIGHT", -px(6), px(6))
+  b.icon:SetPoint("TOPLEFT", px(5), -px(5))
+  b.icon:SetPoint("BOTTOMRIGHT", -px(5), px(5))
   ns.Safe("ringmaske", function()
     local mask = b:CreateMaskTexture()
     mask:SetAllPoints(b.icon)
@@ -130,7 +131,7 @@ local function makeRing(i)
   b.ring = b:CreateTexture(nil, "OVERLAY")
   b.ring:SetAllPoints()
   b.ring:SetTexture(M .. "ring.tga")
-  b.count = ns.Text(b, "GameFontNormalSmall", { 1, 1, 1 }, 11, nil, true)
+  b.count = ns.Text(b, "GameFontNormalSmall", { 1, 1, 1 }, 10, nil, true)
   b.count:SetPoint("BOTTOMRIGHT", -px(1), px(2))
   b:SetScript("OnEnter", function(self)
     self.ring:SetVertexColor(1.3, 1.2, 0.9)
@@ -145,20 +146,36 @@ local function makeRing(i)
   return b
 end
 
-local function makeCheck(i, label)
-  local y = LAYOUT.checks + 6 + (i - 1) * LAYOUT.checkStep
+local function makeCheck(x, label)
+  local y = LAYOUT.line2
   local c = {}
   c.box = f:CreateTexture(nil, "ARTWORK")
   c.box:SetSize(px(21), px(21))
-  at(c.box, LAYOUT.left + 4, y)
+  at(c.box, x, y)
   c.box:SetTexture(M .. "box.tga")
   c.mark = f:CreateTexture(nil, "OVERLAY")
   c.mark:SetSize(px(21), px(21))
-  at(c.mark, LAYOUT.left + 4, y)
-  c.text = ns.Text(f, "GameFontNormalSmall", INK, 14)
-  at(c.text, LAYOUT.left + 33, y + 2)
+  at(c.mark, x, y)
+  c.text = ns.Text(f, "GameFontNormalSmall", INK, 13)
+  at(c.text, x + 27, y + 3)
   c.text:SetText(label)
   return c
+end
+
+-- En tynn ramme rundt feltet med fangsten
+local function box()
+  local x, y, w, h = unpack(LAYOUT.box)
+  local fill = f:CreateTexture(nil, "BORDER")
+  fill:SetColorTexture(0.45, 0.32, 0.18, 0.08)
+  fill:SetSize(px(w), px(h))
+  at(fill, x, y)
+  local edges = { { x, y, w, 1 }, { x, y + h, w, 1 }, { x, y, 1, h }, { x + w, y, 1, h + 1 } }
+  for _, e in ipairs(edges) do
+    local t = f:CreateTexture(nil, "ARTWORK")
+    t:SetColorTexture(0.55, 0.42, 0.27, 0.6)
+    t:SetSize(math.max(1, px(e[3])), math.max(1, px(e[4])))
+    at(t, e[1], e[2])
+  end
 end
 
 function W.Create(cdb)
@@ -208,57 +225,60 @@ function W.Create(cdb)
   local c = LAYOUT.close
   at(ns.IconButton(f, "btn_close", px(c[3]), px(c[4]), L.BTN_DONE, function() ns.Stop() end), c[1], c[2]) -- vinduet åpent = du fisker
 
-  -- Venstre: Klar og Agn
-  local midL = LAYOUT.left + LAYOUT.colw / 2
-  checks.pole = makeCheck(1, L.CHECK_POLE)
-  checks.lure = makeCheck(2, L.CHECK_LURE)
-  for i = 1, RINGS do rings[i] = makeRing(i) end
-  noLureFs = ns.Text(f, "GameFontNormalSmall", FADED, 11)
-  at(noLureFs, LAYOUT.left + 8, LAYOUT.rings + 14)
-  noLureFs:SetText(L.LURE_NONE_IN_BAGS)
-
-  -- Høyre: Fiske og Fangst
-  local R = LAYOUT.right
-  local lbl = ns.Text(f, "GameFontNormalSmall", INK, 14)
-  at(lbl, R + 4, LAYOUT.caught + 4)
-  lbl:SetText(L.CAUGHT)
-  caughtFs = ns.Text(f, "GameFontNormal", HEAD, 15)
-  caughtFs:SetPoint("TOPRIGHT", f, "TOPLEFT", X(R + LAYOUT.barw - 4), -px(LAYOUT.caught + 3))
-
+  -- 1) Fiskeskill øverst, bred stolpe
+  local bx, by, bw, bh = unpack(LAYOUT.bar)
   local barBg = f:CreateTexture(nil, "ARTWORK")
-  barBg:SetPoint("TOPLEFT", f, "TOPLEFT", X(R + 3), -px(LAYOUT.bar + 5))
-  barBg:SetSize(px(LAYOUT.barw - 6), px(19))
+  barBg:SetPoint("TOPLEFT", f, "TOPLEFT", X(bx + 4), -px(by + 4))
+  barBg:SetSize(px(bw - 8), px(bh - 8))
   barBg:SetColorTexture(0.24, 0.17, 0.12, 0.95)
   barFill = f:CreateTexture(nil, "ARTWORK", nil, 1)
   barFill:SetPoint("TOPLEFT", barBg, "TOPLEFT")
-  barFill:SetHeight(px(19))
+  barFill:SetHeight(px(bh - 8))
   barFill:SetColorTexture(0.34, 0.55, 0.24, 1)
-  barFill.full = px(LAYOUT.barw - 6)
+  barFill.full = px(bw - 8)
   local barFrame = f:CreateTexture(nil, "OVERLAY")
-  barFrame:SetPoint("TOPLEFT", f, "TOPLEFT", X(R), -px(LAYOUT.bar + 2))
-  barFrame:SetSize(px(LAYOUT.barw), px(25))
+  barFrame:SetPoint("TOPLEFT", f, "TOPLEFT", X(bx), -px(by))
+  barFrame:SetSize(px(bw), px(bh))
   barFrame:SetTexture(M .. "bar_frame.tga")
   barText = ns.Text(f, "GameFontNormalSmall", { 1, 0.98, 0.92 }, 12, nil, true)
   barText:SetPoint("CENTER", barBg, "CENTER", 0, 0)
 
-  statsFs = ns.Text(f, "GameFontNormalSmall", FADED, 12)
-  at(statsFs, R + 4, LAYOUT.stats)
+  -- 2) Stang og Agn, og agn-ringene på samme linje
+  checks.pole = makeCheck(LAYOUT.pole, L.CHECK_POLE)
+  checks.lure = makeCheck(LAYOUT.lure, L.CHECK_LURE)
+  for i = 1, RINGS do rings[i] = makeRing(i) end
+  noLureFs = ns.Text(f, "GameFontNormalSmall", FADED, 11)
+  at(noLureFs, LAYOUT.rings[1], LAYOUT.line2 + 4)
+  noLureFs:SetText(L.LURE_NONE_IN_BAGS)
 
+  -- 3) Feltet: fanget, kast, verdi og fangsten med verdi per fisk – oppdateres mens du fisker
+  box()
+  summaryFs = ns.Text(f, "GameFontNormalSmall", FADED, 11)
+  summaryFs:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.summary))
+  valueFs = ns.Text(f, "GameFontNormal", HEAD, 13)
+  valueFs:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.value))
+  emptyFs = ns.Text(f, "GameFontNormalSmall", FADED, 11)
+  emptyFs:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.rows + 4))
+  emptyFs:SetText(L.CATCH_EMPTY)
+  local x0, _, w = unpack(LAYOUT.box)
   for i = 1, ROWS do
     local r = {}
     local y = LAYOUT.rows + (i - 1) * LAYOUT.rowStep
     r.icon = f:CreateTexture(nil, "ARTWORK")
-    r.icon:SetSize(px(19), px(19))
-    at(r.icon, R + 4, y + 1)
-    r.text = ns.Text(f, "GameFontNormalSmall", INK, 12)
-    at(r.text, R + 28, y + 3)
-    r.text:SetWidth(px(LAYOUT.colw - 36))
+    r.icon:SetSize(px(16), px(16))
+    at(r.icon, x0 + 10, y)
+    r.text = ns.Text(f, "GameFontNormalSmall", INK, 11)
+    at(r.text, x0 + 32, y + 2)
+    r.text:SetWidth(px(w - 120))
     r.text:SetJustifyH("LEFT")
     if r.text.SetWordWrap then r.text:SetWordWrap(false) end
+    r.value = ns.Text(f, "GameFontNormalSmall", HEAD, 11)
+    r.value:SetPoint("TOPRIGHT", f, "TOPLEFT", X(x0 + w - 10), -px(y + 2))
+    r.value:SetJustifyH("RIGHT")
     rows[i] = r
   end
 
-  -- Nederst i pergamentet: kampvarsel (ellers tomt). På treplata: Rapport.
+  -- Nederst: kampvarsel (ellers tomt). På treplata: Rapport.
   warnFs = ns.Text(f, "GameFontNormalSmall", { 0.7, 0.12, 0.08 }, 11)
   warnFs:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.warn))
   local rp = LAYOUT.report
@@ -371,41 +391,42 @@ function W.RefreshLure()
   end
 end
 
+-- Feltet: regnes som rapporten (samme priser), så tallene her og i rapporten er like
 function W.RefreshCatch(cdb)
   if not f or not f.ready then return end
   local s = cdb.session
-  local list = {}
-  if s then
-    for _, id in ipairs(s.order) do list[#list + 1] = id end
-    table.sort(list, function(a, b) return s.items[a] > s.items[b] end)
+  local r = s and Logic.Report(s, Game.Clock(), ns.Session.Price) or nil
+  local items = r and r.items or {}
+  local st = L.SUMMARY:format(r and r.caught or 0, r and r.casts or 0)
+  if r and r.escaped > 0 then st = st .. L.STATS_ESCAPED:format(r.escaped) end
+  summaryFs:SetText(st)
+  if r and r.total > 0 then
+    valueFs:SetText(L.VALUE_LINE:format(Logic.Coins(r.total)) .. (r.perHour and L.PER_HOUR:format(Logic.Coins(r.perHour)) or ""))
+  else
+    valueFs:SetText(L.VALUE_NONE)
   end
-  for i, r in ipairs(rows) do
-    local id = list[i]
-    if i == ROWS and #list > ROWS then
-      r.icon:Hide()
-      r.text:SetText(L.MORE:format(#list - ROWS + 1))
-      r.text:SetTextColor(FADED[1], FADED[2], FADED[3])
-      r.text:Show()
-    elseif id then
-      r.icon:SetTexture(Game.ItemIcon(id))
-      r.icon:Show()
-      r.text:SetText(L.CATCH_ROW:format(s.items[id], s.names[id] or Game.ItemName(id) or ("#" .. id)))
-      r.text:SetTextColor(INK[1], INK[2], INK[3])
-      r.text:Show()
-    elseif i == 1 then
-      r.icon:Hide()
-      r.text:SetText(L.CATCH_EMPTY)
-      r.text:SetTextColor(FADED[1], FADED[2], FADED[3])
-      r.text:Show()
+  emptyFs:SetShown(#items == 0)
+  for i, row in ipairs(rows) do
+    local it = items[i]
+    if i == ROWS and #items > ROWS then
+      local rest = 0
+      for k = ROWS, #items do rest = rest + (items[k].value or 0) end
+      row.icon:Hide()
+      row.text:SetText(L.MORE:format(#items - ROWS + 1))
+      row.text:SetTextColor(FADED[1], FADED[2], FADED[3])
+      row.value:SetText(rest > 0 and Logic.Coins(rest) or "")
+      row.text:Show() row.value:Show()
+    elseif it then
+      row.icon:SetTexture(Game.ItemIcon(it.id))
+      row.icon:Show()
+      row.text:SetText(L.CATCH_ROW:format(it.n, it.name or Game.ItemName(it.id) or ("#" .. it.id)))
+      row.text:SetTextColor(INK[1], INK[2], INK[3])
+      row.value:SetText(it.value and Logic.Coins(it.value) or "")
+      row.text:Show() row.value:Show()
     else
-      r.icon:Hide()
-      r.text:Hide()
+      row.icon:Hide() row.text:Hide() row.value:Hide()
     end
   end
-  caughtFs:SetText(s and s.caught or 0)
-  local st = L.CASTS:format(s and s.casts or 0)
-  if s and s.escaped > 0 then st = st .. L.STATS_ESCAPED:format(s.escaped) end
-  statsFs:SetText(st)
 end
 
 function W.Refresh(cdb)
@@ -421,8 +442,10 @@ function W.CombatWarning(on)
   warnFs:SetText(on and L.COMBAT_WARN or "")
 end
 
--- Ringene til testene
+-- Til testene
 function W.Rings() return rings end
+function W.Rows() return rows end
+function W.Texts() return { summary = summaryFs, value = valueFs } end
 
 ------------------------------------------------------------------------
 -- Vise og skjule (køes i kamp)
