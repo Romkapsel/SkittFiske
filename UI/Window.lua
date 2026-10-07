@@ -188,23 +188,42 @@ function W.Create(cdb)
   f:SetMovable(true)
   f:EnableMouse(true)
   f:RegisterForDrag("LeftButton")
-  f:SetScale(cdb.scale or 0.9)
+  local scale = cdb.scale or 0.9
+  f:SetScale(scale)
+  -- Midten lagres i UIParent-enheter (v = 2), så posisjonen ikke avhenger av størrelsen (7. okt: vinduet gled på skrå)
   local p = cdb.window
-  if p and p.x then f:SetPoint("CENTER", UIParent, "BOTTOMLEFT", p.x, p.y)
-  else f:SetPoint("CENTER", UIParent, "CENTER", 250, -40) end
+  if p and p.x and not p.v then p.x, p.y, p.v = p.x * scale, p.y * scale, 2 end
+  local function place()
+    local s = f:GetScale()
+    f:ClearAllPoints()
+    if p and p.x then f:SetPoint("CENTER", UIParent, "BOTTOMLEFT", p.x / s, p.y / s)
+    else f:SetPoint("CENTER", UIParent, "CENTER", 250 / s, -40 / s) end
+  end
+  place()
   f:SetScript("OnDragStart", function(self) if not Game.InCombat() then self:StartMoving() end end)
   f:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
     local x, y = self:GetCenter()
-    if x then cdb.window = { x = x, y = y } end
+    if x then
+      local s = self:GetScale()
+      p = { x = x * s, y = y * s, v = 2 }
+      cdb.window = p
+      place()
+    end
   end)
   -- Shift + rull: større eller mindre (ikke i kamp)
   f:EnableMouseWheel(true)
   f:SetScript("OnMouseWheel", function(self, delta)
     if not IsShiftKeyDown() or Game.InCombat() then return end
     local s = math.max(0.5, math.min(1.4, (cdb.scale or 0.9) + delta * 0.05))
+    if not p then
+      local x, y = self:GetCenter()
+      local old = self:GetScale()
+      if x then p = { x = x * old, y = y * old, v = 2 } cdb.window = p end
+    end
     cdb.scale = s
     self:SetScale(s)
+    place() -- midten står stille
   end)
 
   local bg = f:CreateTexture(nil, "BACKGROUND")

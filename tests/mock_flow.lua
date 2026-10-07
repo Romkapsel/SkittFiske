@@ -152,3 +152,18 @@ check(T.bindings.BUTTON2 == nil, "ingen binding henger igjen")
 
 -- Ingen globale utenom våre egne
 for _, g in ipairs(NewGlobals()) do check(false, "ny global: " .. g) end
+
+-- Shift + rull: størrelsen endres rundt midten (posisjonen lagres i UIParent-enheter)
+local wf = NAMED.SkittFiskeWindow
+IsShiftKeyDown = function() return true end
+local before = SkittFiskeCharDB.scale or 0.9
+wf.scripts.OnMouseWheel(wf, 1)
+local p1 = wf.points[1]
+check(SkittFiskeCharDB.scale > before, "større")
+check(SkittFiskeCharDB.window and SkittFiskeCharDB.window.v == 2, "midten lagres uavhengig av størrelsen")
+local sx = p1[4] * wf:GetScale()
+wf.scripts.OnMouseWheel(wf, -1)
+wf.scripts.OnMouseWheel(wf, -1)
+local p2 = wf.points[1]
+check(math.abs(p2[4] * wf:GetScale() - sx) < 0.001, "midten står stille når størrelsen endres")
+IsShiftKeyDown = nil

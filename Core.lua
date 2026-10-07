@@ -80,6 +80,10 @@ on.ADDON_LOADED = function(name)
   SkittFiskeCharDB = SkittFiskeCharDB or {}
   db, cdb = SkittFiskeDB, SkittFiskeCharDB
   db.history = db.history or {}
+  for i = #db.history, 1, -1 do
+    local r = db.history[i]
+    if (r.casts or 0) == 0 and (r.caught or 0) == 0 then table.remove(db.history, i) end
+  end
   db.zones = db.zones or {}
   ns.db, ns.cdb = db, cdb
 end

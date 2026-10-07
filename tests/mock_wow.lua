@@ -74,6 +74,10 @@ local function frame(name, kind)
   function f:SetTexture(t) self.texture = t end
   function f:SetTextColor(r, g, b) self.color = { r, g, b } end
   function f:GetCenter() return 400, 300 end
+  function f:SetScale(v) self.scale = v end
+  function f:GetScale() return self.scale or 1 end
+  function f:GetLeft() return 100 end
+  function f:GetTop() return 600 end
   function f:GetStringHeight() return 12 end
   function f:NumLines() return 0 end
   function f:SetPoint(...) table.insert(self.points, { ... }) end

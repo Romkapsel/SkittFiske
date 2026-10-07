@@ -5,6 +5,7 @@ ns.Report = R
 local Logic, Game, L = ns.Logic, ns.Game, ns.L
 
 local WIDTH = 330
+local MIN_HEIGHT = 420 -- de fleste rapportene får samme høyde
 local f, sub, pageFs, prevBtn, nextBtn
 local pool = {}
 local page = 1
@@ -49,14 +50,22 @@ local function create()
   f = CreateFrame("Frame", "SkittFiskeReport", UIParent)
   f:Hide()
   f:SetSize(WIDTH, 200)
-  f:SetPoint("CENTER", UIParent, "CENTER", 0, 80)
+  f:SetPoint("TOP", UIParent, "CENTER", 0, 240)
   f:SetFrameStrata("DIALOG")
   f:SetClampedToScreen(true)
   f:SetMovable(true)
   f:EnableMouse(true)
   f:RegisterForDrag("LeftButton")
   f:SetScript("OnDragStart", f.StartMoving)
-  f:SetScript("OnDragStop", f.StopMovingOrSizing)
+  -- Etter flytting festes den i øvre venstre hjørne, så høyden vokser nedover og toppen står stille
+  f:SetScript("OnDragStop", function(self)
+    self:StopMovingOrSizing()
+    local l, t = self:GetLeft(), self:GetTop()
+    if l and t then
+      self:ClearAllPoints()
+      self:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", l, t)
+    end
+  end)
   panel(f)
   if UISpecialFrames then table.insert(UISpecialFrames, "SkittFiskeReport") end -- Esc lukker
 
@@ -71,9 +80,9 @@ local function create()
 
   local done = ns.IconButton(f, "btn_ok", 52, 26, L.REPORT_CLOSE, function() f:Hide() end)
   done:SetPoint("BOTTOMRIGHT", -30, 26)
-  prevBtn = ns.IconButton(f, "btn_prev", 44, 22, L.REPORT_OLDER, function() R.Show(page + 1) end)
+  prevBtn = ns.IconButton(f, "btn_prev", 44, 22, L.REPORT_NEWER, function() R.Show(page - 1) end)
   prevBtn:SetPoint("BOTTOMLEFT", 30, 28)
-  nextBtn = ns.IconButton(f, "btn_next", 44, 22, L.REPORT_NEWER, function() R.Show(page - 1) end)
+  nextBtn = ns.IconButton(f, "btn_next", 44, 22, L.REPORT_OLDER, function() R.Show(page + 1) end)
   nextBtn:SetPoint("LEFT", prevBtn, "RIGHT", 4, 0)
   pageFs = ns.Text(f, "GameFontNormalSmall", ns.FADED, 10)
   pageFs:SetPoint("LEFT", nextBtn, "RIGHT", 8, 0)
@@ -158,10 +167,10 @@ function R.Show(p)
       y = y - math.max(18, (h or 12) + 6)
     end
   end
-  f:SetHeight(-y + 62)
+  f:SetHeight(math.max(MIN_HEIGHT, -y + 62))
   pageFs:SetText(#list > 1 and L.REPORT_PAGE:format(page, #list) or "")
-  prevBtn:SetShown(page < #list)
-  nextBtn:SetShown(page > 1)
+  prevBtn:SetShown(page > 1)
+  nextBtn:SetShown(page < #list)
   f:Show()
 end
 
