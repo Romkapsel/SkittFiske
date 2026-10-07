@@ -88,6 +88,17 @@ def main():
         lines.append('    ["%s"] = { %s },' % (key.replace('"', '\\"'), parts))
         used.update(i for i, _ in data[key])
     lines.append("  },")
+    lines.append("  -- Fiskenivået i området (skill_fishing_base_level). Sjanse = skill − nivå + 5 %, ingenting under nivået,")
+    lines.append("  -- ingen slipper unna fra nivå + 95 (CMaNGOS GameObject.cpp). Skill fra utstyr og agn teller med.")
+    lines.append("  skill = {")
+    for area_id, base in sorted(raw.get("skill", {}).items(), key=lambda kv: int(kv[0])):
+        area_id = int(area_id)
+        if area_id not in areas:
+            continue
+        name, parent = areas[area_id]
+        key = name if parent == 0 else "%s / %s" % (areas.get(parent, ("?", 0))[0], name)
+        lines.append('    ["%s"] = %d,' % (key.replace('"', '\\"'), base))
+    lines.append("  },")
     lines.append("  -- Navn til ting spillet ikke har lastet ennå (engelsk, som klienten)")
     lines.append("  names = {")
     for i in sorted(used):

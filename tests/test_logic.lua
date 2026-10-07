@@ -134,3 +134,18 @@ check(#al == 1 and al[1].pct == 0.59, "ellers sonen")
 al, has = Logic.AreaFish(fd, {}, "Durotar", "")
 check(#al == 0 and not has, "ingen data")
 check(Logic.Pct(0.42) == "42 %" and Logic.Pct(0.007) == "0,7 %" and Logic.Pct(0.005) == "0,5 %", "prosent som tekst")
+
+-- Skill i området: underområdet først, ellers sonen; krav og sjanse som serveren regner
+local sk = { ["Stormwind City"] = -20, ["Westfall"] = 55, ["Westfall / Longshore"] = 130 }
+check(Logic.ZoneSkill(sk, "Stormwind City", "The Canals") == -20, "sonen når underområdet ikke har eget nivå")
+check(Logic.ZoneSkill(sk, "Westfall", "Longshore") == 130, "underområdet har eget nivå")
+check(Logic.ZoneSkill(sk, "Durotar", "") == nil, "ukjent område")
+local need = Logic.SkillNeeds(-20)
+check(need.min == 1 and need.full == 75, "Stormwind: krever 1, ingen slipper unna fra 75")
+need = Logic.SkillNeeds(55)
+check(need.min == 55 and need.full == 150, "Westfall: krever 55, full fangst fra 150")
+check(Logic.CatchChance(90, -20) == 1, "90 i Stormwind: alt")
+check(Logic.CatchChance(54, 55) == 0, "under nivået: ingenting")
+check(Logic.CatchChance(55, 55) == 0.05, "på nivået: 5 %")
+check(Logic.CatchChance(100, 55) == 0.5, "45 over: 50 %")
+check(Logic.CatchChance(nil, 55) == nil, "ukjent skill")

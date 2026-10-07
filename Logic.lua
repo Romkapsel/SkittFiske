@@ -202,6 +202,27 @@ function Logic.AreaFish(data, zones, zone, sub)
   return list, base ~= nil
 end
 
+-- Fiskenivået i området: underområdet hvis det har eget, ellers sonen (som serveren). nil = ukjent
+function Logic.ZoneSkill(skills, zone, sub)
+  if not skills then return nil end
+  local subKey = (sub and sub ~= "" and sub ~= zone) and (zone .. " / " .. sub) or nil
+  return (subKey and skills[subKey]) or skills[zone]
+end
+
+-- Hva kreves: { min = laveste skill som kan få fisk, full = ingen slipper unna }. Serveren (CMaNGOS GameObject.cpp):
+-- fangst bare når skill >= nivå, med sjanse (skill − nivå + 5) %
+function Logic.SkillNeeds(base)
+  if not base then return nil end
+  return { min = math.max(1, base), full = math.max(1, base + 95) }
+end
+
+-- Sjansen for at fisken ikke slipper unna, 0–1 (skill = alt du har, med utstyr og agn)
+function Logic.CatchChance(skill, base)
+  if not skill or not base then return nil end
+  if skill < base then return 0 end
+  return math.min(1, (skill - base + 5) / 100)
+end
+
 -- Sjanse som tekst: «42 %», under 1 % med én desimal og komma: «0,7 %»
 function Logic.Pct(p)
   local v = (p or 0) * 100

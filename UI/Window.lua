@@ -470,6 +470,7 @@ local DROP_GOLD = { 1, 0.82, 0 }
 local DROP_LIGHT = { 1, 0.95, 0.75 }
 local DROP_DIM = { 0.62, 0.6, 0.55 }
 local DROP_ROW = 24
+local DROP_TOP = 82 -- første fiskelinje under overskrift, skill og sjanse
 
 function W.CreateDrop()
   local w = LAYOUT.drop
@@ -489,12 +490,17 @@ function W.CreateDrop()
   drop.head = ns.Text(drop, "GameFontNormal", DROP_GOLD, 14, nil, true)
   drop.head:SetPoint("TOP", 0, -px(10))
   drop.empty = ns.Text(drop, "GameFontNormalSmall", DROP_DIM, 13)
-  drop.empty:SetPoint("TOP", drop.head, "BOTTOM", 0, -px(8))
+  -- Skill: hva området krever, og din sjanse nå (med utstyr og agn)
+  drop.skill = ns.Text(drop, "GameFontNormalSmall", DROP_LIGHT, 12, nil, true)
+  drop.skill:SetPoint("TOP", drop.head, "BOTTOM", 0, -px(5))
+  drop.chance = ns.Text(drop, "GameFontNormalSmall", DROP_LIGHT, 12, nil, true)
+  drop.chance:SetPoint("TOP", drop.skill, "BOTTOM", 0, -px(3))
+  drop.empty:SetPoint("TOP", drop.chance, "BOTTOM", 0, -px(8))
   drop.empty:SetWidth(px(w - 28))
   drop.empty:SetText(L.DROP_EMPTY)
   for i = 1, DROP_ROWS do
     local r = {}
-    local y = -px(38 + (i - 1) * DROP_ROW)
+    local y = -px(DROP_TOP + (i - 1) * DROP_ROW)
     r.icon = drop:CreateTexture(nil, "ARTWORK")
     r.icon:SetSize(px(20), px(20))
     r.icon:SetPoint("TOPLEFT", px(12), y)
@@ -520,6 +526,27 @@ function W.RefreshDrop()
   local data = ns.FishData
   local list = Logic.AreaFish(data and data.zones, ns.db and ns.db.zones or {}, z, sub)
   drop.head:SetText(L.DROP_HERE:format((sub ~= "" and sub) or z))
+  local base = Logic.ZoneSkill(data and data.skill, z, sub)
+  local need = Logic.SkillNeeds(base)
+  if need then
+    drop.skill:SetText(L.DROP_SKILL:format(need.min, need.full))
+    local rank, _, mod = Game.Skill()
+    local chance = Logic.CatchChance(rank and (rank + (mod or 0)), base)
+    if chance == nil then
+      drop.chance:SetText("")
+    elseif chance == 0 then
+      drop.chance:SetText(L.DROP_CHANCE_NONE)
+      drop.chance:SetTextColor(1, 0.35, 0.3)
+    else
+      drop.chance:SetText(L.DROP_CHANCE:format(Logic.Pct(chance)))
+      if chance >= 1 then drop.chance:SetTextColor(0.45, 0.9, 0.45)
+      elseif chance >= 0.75 then drop.chance:SetTextColor(1, 0.82, 0)
+      else drop.chance:SetTextColor(1, 0.5, 0.3) end
+    end
+  else
+    drop.skill:SetText("")
+    drop.chance:SetText("")
+  end
   drop.empty:SetShown(#list == 0)
   for i, r in ipairs(dropRows) do
     local it = list[i]
@@ -536,7 +563,7 @@ function W.RefreshDrop()
     end
   end
   local n = math.min(#list, DROP_ROWS)
-  drop:SetHeight(px(n > 0 and (46 + n * DROP_ROW) or 70))
+  drop:SetHeight(px(n > 0 and (DROP_TOP + 8 + n * DROP_ROW) or (DROP_TOP + 30)))
 end
 
 function W.ToggleDrop()

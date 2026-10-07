@@ -9,7 +9,7 @@ import gzip
 import json
 import re
 
-TABLES = {"fishing_loot_template": [], "reference_loot_template": [], "item_template": []}
+TABLES = {"fishing_loot_template": [], "reference_loot_template": [], "item_template": [], "skill_fishing_base_level": []}
 
 
 def split_fields(t):
@@ -106,5 +106,6 @@ out = {"fishing": rows("fishing_loot_template"), "reference": rows("reference_lo
        "items": {}}
 used = set(r["item"] for r in out["fishing"]) | set(r["item"] for r in out["reference"])
 out["items"] = {str(k): v for k, v in items.items() if k in used}
+out["skill"] = {r[0]: int(r[1]) for r in TABLES["skill_fishing_base_level"]}
 json.dump(out, open("fish_raw.json", "w", encoding="utf-8"))
 print(len(out["fishing"]), "fiske-rader,", len(out["reference"]), "referanse-rader,", len(out["items"]), "ting")
