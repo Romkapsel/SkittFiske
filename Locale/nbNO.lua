@@ -47,8 +47,8 @@ ns.L = {
   CASTS = "Kast %d",
   MORE = "+ %d til",
   BAR = "Fiske %d/%d",
-  BTN_REPORT = "Rapport",
-  BTN_DONE = "Ferdig – avslutt fiskingen",
+  BTN_REPORT = "Fangstrapportene fra tidligere økter",
+  BTN_DONE = "Avslutt fiskingen: det gamle utstyret og lyden tilbake",
   SIZE_TIP = "Shift + rull: større eller mindre",
 
   -- Rapporten

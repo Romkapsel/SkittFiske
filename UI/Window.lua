@@ -36,17 +36,17 @@ function ns.Text(parent, font, color, size, path, shadow)
   return fs
 end
 
--- Daniels røde knapper (art/knapper.png → Media/btn_*.tga): bare symbol, teksten står i tooltipen
-function ns.IconButton(parent, name, w, h, tip, onClick)
+-- Daniels røde knapper (art/knapper.png → Media/btn_*.tga, art/skilt.png → Media/lbl_*.tga). tex = filnavnet uten .tga
+function ns.IconButton(parent, tex, w, h, tip, onClick)
   local b = CreateFrame("Button", nil, parent)
   b:SetSize(w, h)
-  b.iconName = name
+  b.iconName = tex
   b.tex = b:CreateTexture(nil, "ARTWORK")
   b.tex:SetAllPoints()
-  b.tex:SetTexture(M .. "btn_" .. name .. ".tga")
+  b.tex:SetTexture(M .. tex .. ".tga")
   local hl = b:CreateTexture(nil, "HIGHLIGHT")
   hl:SetAllPoints()
-  hl:SetTexture(M .. "btn_" .. name .. ".tga")
+  hl:SetTexture(M .. tex .. ".tga")
   hl:SetBlendMode("ADD")
   hl:SetAlpha(0.3)
   b:RegisterForClicks("LeftButtonUp")
@@ -70,13 +70,14 @@ local LAYOUT = {
   crop = { 168, 856 },
   title = 104, zone = 146, divider = 168,
   left = 362, right = 552, colw = 172,
-  head1 = 174, head2 = 284,
-  checks = 204, checkStep = 25,
-  rings = 312, ring = 44, ringStep = 52,
-  caught = 204, bar = 228, barw = 168, stats = 258,
-  rows = 312, rowStep = 23,
-  hint = 388,
-  buttons = { 648, 724 }, buttonY = 433, buttonW = 60, buttonH = 30,
+  head1 = 170, head2 = 290,
+  checks = 208, checkStep = 25,
+  rings = 333, ring = 44, ringStep = 52,
+  caught = 212, bar = 236, barw = 168, stats = 264,
+  rows = 333, rowStep = 20,
+  hint = 394,
+  buttons = { 642, 720 }, buttonY = 431, buttonW = 66, buttonH = 34,
+  plaqueW = 72, plaqueH = 37,
   close = { 752, 83, 48, 24 },
 }
 local S = 0.8 -- enheter per piksel i frame.tga
@@ -106,18 +107,20 @@ local function hideTip() GameTooltip:Hide() end
 -- Bygging
 ------------------------------------------------------------------------
 
-local function heading(text, x, y)
-  local fs = ns.Text(f, "GameFontNormalLarge", HEAD, 19, ns.FONT_TITLE)
-  fs:SetPoint("TOP", f, "TOPLEFT", X(x), -px(y))
-  fs:SetText(text)
-  return fs
+-- Overskrift = Daniels røde skilt (Media/lbl_<navn>.tga), midtstilt på x
+local function heading(name, x, y)
+  local t = f:CreateTexture(nil, "ARTWORK")
+  t:SetSize(px(LAYOUT.plaqueW), px(LAYOUT.plaqueH))
+  t:SetPoint("TOP", f, "TOPLEFT", X(x), -px(y))
+  t:SetTexture(M .. "lbl_" .. name .. ".tga")
+  return t
 end
 
 local function makeRing(i)
   local size = px(LAYOUT.ring)
   local b = CreateFrame("Button", nil, f, "SecureActionButtonTemplate")
   b:SetSize(size, size)
-  at(b, LAYOUT.left + 8 + (i - 1) * LAYOUT.ringStep, LAYOUT.rings)
+  at(b, LAYOUT.left + 18 + (i - 1) * LAYOUT.ringStep, LAYOUT.rings)
   b:RegisterForClicks(Game.ClickMode()) -- bare én av dem, ellers brukes agnet to ganger
   b:SetAttribute("type", "macro")
   b.glow = b:CreateTexture(nil, "BACKGROUND")
@@ -214,15 +217,15 @@ function W.Create(cdb)
   line:SetPoint("TOP", f, "TOPLEFT", X(TITLE_X), -px(LAYOUT.divider))
 
   local c = LAYOUT.close
-  at(ns.IconButton(f, "close", px(c[3]), px(c[4]), L.BTN_DONE, function() ns.Stop() end), c[1], c[2]) -- vinduet åpent = du fisker
+  at(ns.IconButton(f, "btn_close", px(c[3]), px(c[4]), L.BTN_DONE, function() ns.Stop() end), c[1], c[2]) -- vinduet åpent = du fisker
 
   -- Venstre: Klar og Agn
   local midL = LAYOUT.left + LAYOUT.colw / 2
-  heading(L.PLAQUE_READY, midL, LAYOUT.head1)
+  heading("klar", midL, LAYOUT.head1)
   checks.pole = makeCheck(1, L.CHECK_POLE)
   checks.lure = makeCheck(2, L.CHECK_LURE)
   checks.sound = makeCheck(3, L.CHECK_SOUND)
-  heading(L.PLAQUE_LURE, midL, LAYOUT.head2)
+  heading("agn", midL, LAYOUT.head2)
   for i = 1, RINGS do rings[i] = makeRing(i) end
   noLureFs = ns.Text(f, "GameFontNormalSmall", FADED, 11)
   at(noLureFs, LAYOUT.left + 8, LAYOUT.rings + 14)
@@ -230,7 +233,7 @@ function W.Create(cdb)
 
   -- Høyre: Fiske og Fangst
   local R = LAYOUT.right
-  heading(L.PLAQUE_SKILL, R + LAYOUT.colw / 2, LAYOUT.head1)
+  heading("fiske", R + LAYOUT.colw / 2, LAYOUT.head1)
   local lbl = ns.Text(f, "GameFontNormalSmall", INK, 14)
   at(lbl, R + 4, LAYOUT.caught + 4)
   lbl:SetText(L.CAUGHT)
@@ -256,7 +259,7 @@ function W.Create(cdb)
   statsFs = ns.Text(f, "GameFontNormalSmall", FADED, 12)
   at(statsFs, R + 4, LAYOUT.stats)
 
-  heading(L.PLAQUE_CATCH, R + LAYOUT.colw / 2, LAYOUT.head2)
+  heading("fangst", R + LAYOUT.colw / 2, LAYOUT.head2)
   for i = 1, ROWS do
     local r = {}
     local y = LAYOUT.rows + (i - 1) * LAYOUT.rowStep
@@ -285,8 +288,8 @@ function W.Create(cdb)
   end)
   hintHit:SetScript("OnLeave", hideTip)
   local bw, bh = px(LAYOUT.buttonW), px(LAYOUT.buttonH)
-  at(ns.IconButton(f, "report", bw, bh, L.BTN_REPORT, function() ns.Report.Show(1) end), LAYOUT.buttons[1], LAYOUT.buttonY)
-  at(ns.IconButton(f, "ok", bw, bh, L.BTN_DONE, function() ns.Stop() end), LAYOUT.buttons[2], LAYOUT.buttonY)
+  at(ns.IconButton(f, "lbl_rapport", bw, bh, L.BTN_REPORT, function() ns.Report.Show(1) end), LAYOUT.buttons[1], LAYOUT.buttonY)
+  at(ns.IconButton(f, "lbl_ferdig", bw, bh, L.BTN_DONE, function() ns.Stop() end), LAYOUT.buttons[2], LAYOUT.buttonY)
 
   -- Lys som pulserer når noe mangler (agn-ringene og krysset ved Agn)
   ns.Safe("glow", function()

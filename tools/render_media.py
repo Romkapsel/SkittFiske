@@ -19,13 +19,14 @@ LAYOUT = {
     "crop": (168, 856),
     "title": 104, "zone": 146, "divider": 168,
     "left": 362, "right": 552, "colw": 172,
-    "head1": 174, "head2": 284,
-    "checks": 204, "check_step": 25,
-    "rings": 312, "ring": 44, "ring_step": 52,
-    "caught": 204, "bar": 228, "barw": 168, "stats": 258,
-    "rows": 312, "row_step": 23,
-    "hint": 388,
-    "buttons": (648, 724), "button_y": 433, "button_w": 60, "button_h": 30,
+    "head1": 170, "head2": 290,
+    "checks": 208, "check_step": 25,
+    "rings": 333, "ring": 44, "ring_step": 52,
+    "caught": 212, "bar": 236, "barw": 168, "stats": 264,
+    "rows": 333, "row_step": 20,
+    "hint": 394,
+    "buttons": (642, 720), "button_y": 431, "button_w": 66, "button_h": 34,
+    "plaque": (72, 37),
     "close": (752, 83, 48, 24),
 }
 INK = (70, 44, 22)
@@ -221,21 +222,26 @@ def preview():
     ctext(508, L["title"], "Skitt Fiske", title, HEAD)
     ctext(508, L["zone"], "Crystal Lake, Elwynn Forest", small, (120, 96, 70))
     d.line([P(382, L["divider"]), P(634, L["divider"])], fill=(150, 120, 80), width=1)
-    ctext(L["left"] + L["colw"] / 2, L["head1"], "Klar", head, HEAD)
+    def plaque(name, x, y):
+        w, h = L["plaque"]
+        t = Image.open(os.path.join(OUT, "lbl_" + name + ".tga")).convert("RGBA").resize((w, h))
+        img.alpha_composite(t, tuple(int(v) for v in P(x - w / 2, y)))
+
+    plaque("klar", L["left"] + L["colw"] / 2, L["head1"])
     for i, t in enumerate(("Stang", "Agn  6 min", "Lyd")):
         y = L["checks"] + 6 + i * L["check_step"]
         img.alpha_composite(box, tuple(int(v) for v in P(L["left"] + 4, y)))
         img.alpha_composite(check, tuple(int(v) for v in P(L["left"] + 4, y)))
         d.text(P(L["left"] + 30, y - 1), t, font=txt, fill=INK)
-    ctext(L["left"] + L["colw"] / 2, L["head2"], "Agn", head, HEAD)
+    plaque("agn", L["left"] + L["colw"] / 2, L["head2"])
     for i, colr in enumerate(((200, 120, 140), (110, 170, 200), (170, 120, 220))):
-        x, y = P(L["left"] + 8 + i * L["ring_step"], L["rings"])
+        x, y = P(L["left"] + 18 + i * L["ring_step"], L["rings"])
         d.ellipse([x + 6, y + 6, x + L["ring"] - 6, y + L["ring"] - 6], fill=colr)
         img.alpha_composite(ring, (int(x), int(y)))
         d.text((x + L["ring"] - 12, y + L["ring"] - 18), str((5, 3, 2)[i]), font=bold, fill=(255, 255, 255))
 
     R = L["right"]
-    ctext(R + L["colw"] / 2, L["head1"], "Fiske", head, HEAD)
+    plaque("fiske", R + L["colw"] / 2, L["head1"])
     d.text(P(R + 4, L["caught"] + 4), "Fanget", font=txt, fill=INK)
     d.text(P(R + L["barw"] - 18, L["caught"] + 3), "13", font=bold, fill=HEAD)
     bx, by = P(R, L["bar"] + 2)
@@ -244,15 +250,15 @@ def preview():
     img.alpha_composite(barf, (int(bx), int(by)))
     ctext(R + L["barw"] / 2, L["bar"] + 4, "Fiske 120/150  +25", small, (255, 250, 235))
     d.text(P(R + 4, L["stats"]), "Kast 20  ·  Slapp unna 1", font=small, fill=(110, 86, 60))
-    ctext(R + L["colw"] / 2, L["head2"], "Fangst", head, HEAD)
+    plaque("fangst", R + L["colw"] / 2, L["head2"])
     for i, t in enumerate(("8 × Raw Brilliant Smallf…", "3 × Raw Longjaw Mud…", "+ 2 til")):
         y = L["rows"] + i * L["row_step"]
         if i < 2:
             d.rectangle([P(R + 4, y + 2), (P(R + 4, y)[0] + 14, P(R + 4, y)[1] + 16)], fill=(120, 140, 160))
         d.text(P(R + 24, y), t, font=small, fill=INK if i < 2 else (120, 96, 70))
     ctext(536, L["hint"], "Dobbelt høyreklikk: kast", small, (120, 96, 70))
-    for x, name in zip(L["buttons"], ("report", "ok")):
-        b = Image.open(os.path.join(OUT, "btn_" + name + ".tga")).convert("RGBA").resize((L["button_w"], L["button_h"]))
+    for x, name in zip(L["buttons"], ("lbl_rapport", "lbl_ferdig")):
+        b = Image.open(os.path.join(OUT, name + ".tga")).convert("RGBA").resize((L["button_w"], L["button_h"]))
         img.alpha_composite(b, tuple(int(v) for v in P(x, L["button_y"])))
     cx, cy, cw, ch = L["close"]
     b = Image.open(os.path.join(OUT, "btn_close.tga")).convert("RGBA").resize((cw, ch))
