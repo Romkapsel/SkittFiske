@@ -529,7 +529,8 @@ function W.RefreshDrop()
   local base = Logic.ZoneSkill(data and data.skill, z, sub)
   local need = Logic.SkillNeeds(base)
   if need then
-    drop.skill:SetText(L.DROP_SKILL:format(need.min, need.full))
+    -- «Krever 1» var uklart (Daniel): ingen krav sies med ord
+    drop.skill:SetText(need.min <= 1 and L.DROP_SKILL_ANY:format(need.full) or L.DROP_SKILL:format(need.min, need.full))
     local rank, _, mod = Game.Skill()
     local chance = Logic.CatchChance(rank and (rank + (mod or 0)), base)
     if chance == nil then
