@@ -11,8 +11,8 @@ Fiske uten mas i WoW Forever. Én knapp på baren starter, og samme knapp avslut
 3. **Dobbelt høyreklikk** på vannet kaster. **Høyreklikk på duppen** når den plasker, så får du fisken.
 4. **Agn:** Klikk på agnknappen i vinduet. Har du flere slags agn, kommer de opp, og du velger ett. Knappen lyser når
    agnet holder på å gå ut.
-5. **Trykk på knappen igjen** (eller krysset i vinduet): Det gamle utstyret og lyden din kommer tilbake, og du får en
-   rapport over fangsten. Den viser tid, kast, fisk, skill og hva fangsten er verdt.
+5. **Trykk på knappen igjen** (eller krysset i vinduet): Det gamle utstyret og lyden din kommer tilbake. Fangsten lagres
+   som en rapport (tid, kast, fisk, skill og hva den er verdt). Trykk Rapport for å se den.
 
 Blir du angrepet mens du fisker, kommer våpnene på med én gang når du trykker på knappen. Resten kommer på når
 kampen er over.
