@@ -77,7 +77,6 @@ local LAYOUT = {
   warn = 386,
   report = { 672, 431, 66, 34 },
   close = { 738, 94, 44, 22 },
-  eye = { 248, 141, 84 },                -- midt på øyekula: x, y, størrelsen på gløden
   drop = 300,                            -- bredden på nedtrekket fra området
 }
 local S = 0.8 -- enheter per piksel i frame.tga
@@ -93,7 +92,7 @@ local function at(region, x, y, point)
   region:SetPoint(point or "TOPLEFT", region:GetParent(), "TOPLEFT", X(x), -px(y))
 end
 
-local f, eye, drop, zoneFs, warnFs, summaryFs, valueFs, emptyFs, barFill, barText, noLureFs
+local f, drop, zoneFs, warnFs, summaryFs, valueFs, emptyFs, barFill, barText, noLureFs
 local checks, rings, rows, dropRows = {}, {}, {}, {}
 local lures = {}
 local isLure = {} -- item-ID → om det er agn (tooltipen sjekkes én gang per ting)
@@ -197,14 +196,6 @@ function W.Create(cdb)
   bg:SetTexture(M .. "frame.tga")
   bg:SetTexCoord(LAYOUT.crop[1] / 1024, LAYOUT.crop[2] / 1024, 0, 1)
 
-  -- Fiskeøyet kan lyse (W.EyeGlow)
-  local e = LAYOUT.eye
-  eye = f:CreateTexture(nil, "ARTWORK", nil, 2)
-  eye:SetSize(px(e[3]), px(e[3]))
-  eye:SetPoint("CENTER", f, "TOPLEFT", X(e[1]), -px(e[2]))
-  eye:SetTexture(M .. "eye_glow.tga")
-  eye:SetBlendMode("ADD")
-  eye:Hide()
 
   local title = ns.Text(f, "GameFontNormalLarge", HEAD, 27, ns.FONT_TITLE)
   title:SetPoint("TOP", f, "TOPLEFT", X(CENTER_X), -px(LAYOUT.title))
@@ -292,7 +283,7 @@ function W.Create(cdb)
 
   -- Lys som pulserer når noe mangler (agn-ringene og krysset ved Agn)
   ns.Safe("glow", function()
-    local regions = { checks.lure.mark, eye }
+    local regions = { checks.lure.mark }
     for _, b in ipairs(rings) do regions[#regions + 1] = b.glow end
     for _, region in ipairs(regions) do
       local g = region:CreateAnimationGroup()
@@ -532,13 +523,6 @@ function W.ToggleDrop()
 end
 
 function W.DropShown() return drop and drop:IsShown() end
-
--- Fiskeøyet lyser og pulserer (venter på at nappe-lytteren finner et signal; /skitt øye viser det i 5 s)
-function W.EyeGlow(on)
-  if not f or not f.ready then return end
-  eye:SetShown(on)
-  pulse(eye, on)
-end
 
 -- Til testene
 function W.Rings() return rings end

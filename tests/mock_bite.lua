@@ -1,4 +1,4 @@
--- Nappe-lytteren og fiskeøyet: mens duppen er ute, noteres alt spillet sier (hver hendelse høyst 3 ganger)
+-- Nappe-lytteren (/skitt debug nappe): mens duppen er ute, noteres alt spillet sier (hver hendelse høyst 3 ganger)
 T.equip = { [16] = SWORD }
 Put(POLE)
 Login()
@@ -35,8 +35,3 @@ check(not table.concat(b.ev, "\n"):find("ANOTHER_EVENT", 1, true), "ingenting et
 Slash("")
 Fire("UNIT_SPELLCAST_CHANNEL_START", "player", "g", 7620)
 check(next(T.allEvents) == nil, "ingen lytting utenom fiskingen")
-
--- Øyet
-Slash("")
-check(pcall(Slash, "øye"), "/skitt øye viser gløden")
-check(pcall(NS.Window.EyeGlow, false), "og slår den av")

@@ -179,7 +179,6 @@ SlashCmdList.SKITTFISKE = function(msg)
   elseif msg == "rapport" then ns.Report.Show(1)
   elseif msg == "vindu" then if ns.active then ns.Window.Show() end
   elseif msg == "debug" then ns.Debug.Show()
-  elseif msg == "øye" then ns.Window.EyeGlow(true) if C_Timer then C_Timer.After(5, function() ns.Window.EyeGlow(false) end) end
   elseif msg == "debug tøm" then ns.Debug.Clear()
   elseif msg == "debug nappe" then
     db.biteProbe = not db.biteProbe

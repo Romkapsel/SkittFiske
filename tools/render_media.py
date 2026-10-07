@@ -23,7 +23,6 @@ LAYOUT = {
     "rings": (568, 204, 40, 46),
     "list": (364, 288),
     "summary": 258, "value": 276, "rows": 298, "row_step": 19,
-    "eye": (248, 141, 84),
     "report": (672, 431, 66, 34),
     "close": (738, 94, 44, 22),
 }
@@ -197,21 +196,6 @@ def render_arrow():
     save(out, "arrow_down.tga", (32, 32))
 
 
-def render_glow():
-    """Myk, oransje glød til fiskeøyet (legges over med ADD i spillet): hvit kjerne, oransje ut mot kanten."""
-    s = 128
-    y, x = np.mgrid[0:s, 0:s].astype(np.float32)
-    r = np.sqrt((x - s / 2 + 0.5) ** 2 + (y - s / 2 + 0.5) ** 2) / (s / 2)
-    a = np.clip(1 - r, 0, 1) ** 1.8
-    core = np.clip(1 - r * 3.2, 0, 1)
-    out = np.zeros((s, s, 4), np.float32)
-    out[..., 0] = 255
-    out[..., 1] = 150 + 105 * core
-    out[..., 2] = 40 + 200 * core
-    out[..., 3] = a * 255
-    Image.fromarray(out.astype(np.uint8), "RGBA").save(os.path.join(OUT, "eye_glow.tga"))
-
-
 def preview():
     L = LAYOUT
     x0c, x1c = L["crop"]
@@ -244,15 +228,6 @@ def preview():
 
     ctext(508, L["title"], "Skitt Fiske", title, HEAD)
     ctext(508, L["zone"], "Crystal Lake, Elwynn Forest", small, (120, 96, 70))
-    ex, ey, es = L["eye"]
-    glow = Image.open(os.path.join(OUT, "eye_glow.tga")).convert("RGBA").resize((es, es))
-    gl = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    gl.alpha_composite(glow, tuple(int(v) for v in P(ex - es / 2, ey - es / 2)))
-    base = np.asarray(img).astype(np.float32)
-    add = np.asarray(gl).astype(np.float32)
-    base[..., :3] = np.clip(base[..., :3] + add[..., :3] * add[..., 3:] / 255.0, 0, 255)
-    img = Image.fromarray(base.astype(np.uint8), "RGBA")
-    d = ImageDraw.Draw(img)
     aw = Image.open(os.path.join(OUT, "arrow_down.tga")).convert("RGBA").resize((14, 14))
     zw = d.textlength("Crystal Lake, Elwynn Forest", font=small)
     img.alpha_composite(aw, tuple(int(v) for v in P(508 + zw / 2 + 4, L["zone"] + 2)))
@@ -300,7 +275,6 @@ if __name__ == "__main__":
     render_symbols()
     render_bar()
     render_panel()
-    render_glow()
     render_arrow()
     for old in ("plaque.tga", "button.tga"):
         if os.path.exists(os.path.join(OUT, old)):
