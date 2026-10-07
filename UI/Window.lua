@@ -77,6 +77,7 @@ local LAYOUT = {
   warn = 390,
   report = { 672, 431, 66, 34 },
   close = { 738, 94, 44, 22 },
+  eye = { 262, 151, 120 },               -- fiskeøyet: x, y, størrelsen på gløden
 }
 local S = 0.8 -- enheter per piksel i frame.tga
 local CROP_W = LAYOUT.crop[2] - LAYOUT.crop[1]
@@ -92,7 +93,7 @@ local function at(region, x, y, point)
   region:SetPoint(point or "TOPLEFT", region:GetParent(), "TOPLEFT", X(x), -px(y))
 end
 
-local f, zoneFs, warnFs, summaryFs, valueFs, emptyFs, barFill, barText, noLureFs
+local f, eye, zoneFs, warnFs, summaryFs, valueFs, emptyFs, barFill, barText, noLureFs
 local checks, rings, rows = {}, {}, {}
 local lures = {}
 local isLure = {} -- item-ID → om det er agn (tooltipen sjekkes én gang per ting)
@@ -212,6 +213,15 @@ function W.Create(cdb)
   bg:SetTexture(M .. "frame.tga")
   bg:SetTexCoord(LAYOUT.crop[1] / 1024, LAYOUT.crop[2] / 1024, 0, 1)
 
+  -- Fiskeøyet kan lyse (W.EyeGlow)
+  local e = LAYOUT.eye
+  eye = f:CreateTexture(nil, "ARTWORK", nil, 2)
+  eye:SetSize(px(e[3]), px(e[3]))
+  eye:SetPoint("CENTER", f, "TOPLEFT", X(e[1]), -px(e[2]))
+  eye:SetTexture(M .. "eye_glow.tga")
+  eye:SetBlendMode("ADD")
+  eye:Hide()
+
   local title = ns.Text(f, "GameFontNormalLarge", HEAD, 27, ns.FONT_TITLE)
   title:SetPoint("TOP", f, "TOPLEFT", X(TITLE_X), -px(LAYOUT.title))
   title:SetText(L.TITLE)
@@ -286,7 +296,7 @@ function W.Create(cdb)
 
   -- Lys som pulserer når noe mangler (agn-ringene og krysset ved Agn)
   ns.Safe("glow", function()
-    local regions = { checks.lure.mark }
+    local regions = { checks.lure.mark, eye }
     for _, b in ipairs(rings) do regions[#regions + 1] = b.glow end
     for _, region in ipairs(regions) do
       local g = region:CreateAnimationGroup()
@@ -440,6 +450,13 @@ end
 function W.CombatWarning(on)
   if not f or not f.ready then return end
   warnFs:SetText(on and L.COMBAT_WARN or "")
+end
+
+-- Fiskeøyet lyser og pulserer (venter på at nappe-lytteren finner et signal; /skitt øye viser det i 5 s)
+function W.EyeGlow(on)
+  if not f or not f.ready then return end
+  eye:SetShown(on)
+  pulse(eye, on)
 end
 
 -- Til testene

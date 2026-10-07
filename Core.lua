@@ -133,7 +133,12 @@ on.UNIT_SPELLCAST_CHANNEL_START = function(unit, _, spellId)
   if unit == "player" then ns.Session.OnChannelStart(cdb, spellId) if ns.active then ns.Window.RefreshCatch(cdb) end end
 end
 
+on.UNIT_SPELLCAST_CHANNEL_STOP = function(unit)
+  if unit == "player" then ns.Debug.BiteStop() end
+end
+
 on.LOOT_OPENED = function()
+  ns.Debug.BiteMark("LOOT_OPENED")
   ns.Session.OnLootOpened(cdb, db)
   if ns.active then ns.Window.RefreshCatch(cdb) end
 end
@@ -172,6 +177,7 @@ SlashCmdList.SKITTFISKE = function(msg)
   elseif msg == "rapport" then ns.Report.Show(1)
   elseif msg == "vindu" then if ns.active then ns.Window.Show() end
   elseif msg == "debug" then ns.Debug.Show()
+  elseif msg == "øye" then ns.Window.EyeGlow(true) if C_Timer then C_Timer.After(5, function() ns.Window.EyeGlow(false) end) end
   elseif msg == "debug tøm" then ns.Debug.Clear()
   else ns.Print(L.HELP) end
 end

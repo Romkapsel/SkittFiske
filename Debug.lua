@@ -25,6 +25,7 @@ end
 function D.Error(msg)
   local d = store()
   if not d or not ns.active then return end
+  D.BiteMark("feil: " .. msg)
   if d.errors[1] == msg then return end
   table.insert(d.errors, 1, msg)
   while #d.errors > 10 do table.remove(d.errors) end
@@ -54,6 +55,71 @@ function D.Loot(fishing)
   end
   table.insert(d.loot, 1, { fishing = tostring(fishing), items = items, zone = table.concat({ Game.Zone() }, " / ") })
   while #d.loot > 5 do table.remove(d.loot) end
+end
+
+------------------------------------------------------------------------
+-- Nappe-lytteren (Daniel 7. okt: kan fiskeøyet lyse når fisken napper?). Mens duppen er ute, noteres alle hendelser
+-- spillet sender (hver høyst 3 ganger per kast), med sekunder siden kastet, pluss når loot åpnes og kastet stopper.
+-- Finnes det en hendelse som alltid kommer like før fangsten, er det nappet. Lagres i SkittFiskeDB.debug.bite.
+------------------------------------------------------------------------
+
+local probe, cast
+
+local function show(v)
+  if v == nil then return "" end
+  if Game.secret(v) then return "<hemmelig>" end
+  local s = tostring(v)
+  return #s > 40 and s:sub(1, 40) or s
+end
+
+function D.BiteMark(what)
+  if not cast or cast.n >= 150 then return end
+  cast.n = cast.n + 1
+  cast.ev[#cast.ev + 1] = ("%.2f >> %s"):format(Game.Now() - cast.t0, show(what))
+end
+
+function D.BiteEvent(e, a, b)
+  if not cast or cast.n >= 150 then return end
+  cast.seen[e] = (cast.seen[e] or 0) + 1
+  if cast.seen[e] > 3 then return end
+  cast.n = cast.n + 1
+  cast.ev[#cast.ev + 1] = ("%.2f %s %s %s"):format(Game.Now() - cast.t0, e, show(a), show(b))
+end
+
+function D.BiteStart()
+  local d = store()
+  if not d then return end
+  if not probe then
+    probe = CreateFrame("Frame")
+    probe:SetScript("OnEvent", function(_, e, ...) D.BiteEvent(e, ...) end)
+    -- Spillets «myke» mål (Interact-tasten) kan peke på duppen: noter når navnet endrer seg
+    probe:SetScript("OnUpdate", function(self, el)
+      self.t = (self.t or 0) + el
+      if self.t < 0.1 or not cast then return end
+      self.t = 0
+      local n = Game.try(UnitName, "softinteract")
+      if n ~= cast.soft then cast.soft = n D.BiteMark("softinteract=" .. tostring(n)) end
+    end)
+  end
+  cast = { t0 = Game.Now(), ev = {}, seen = {}, n = 0 }
+  d.bite = d.bite or {}
+  table.insert(d.bite, 1, cast)
+  while #d.bite > 8 do table.remove(d.bite) end
+  pcall(probe.RegisterAllEvents, probe)
+  probe:Show()
+end
+
+-- Kastet er over: lytt 2 s til (loot og feilmeldinger kommer like etter), så stopp
+function D.BiteStop()
+  local mine = cast
+  if not mine then return end
+  D.BiteMark("kastet stopper")
+  local function stop()
+    if cast ~= mine then return end
+    if probe then pcall(probe.UnregisterAllEvents, probe) probe:Hide() end
+    cast.seen, cast = nil, nil
+  end
+  if C_Timer then C_Timer.After(2, stop) else stop() end
 end
 
 function D.Snapshot()
@@ -97,6 +163,7 @@ function D.Show()
   if l then ns.Print(("siste loot: fiske=%s · %s"):format(l.fishing, table.concat(l.items, ", "))) end
   if d.errors[1] then ns.Print("siste feilmelding: " .. d.errors[1]) end
   if d.ui and d.ui[1] then ns.Print("vinduet: " .. d.ui[1]) end
+  ns.Print(("nappe-lytteren har %d kast lagret"):format(d.bite and #d.bite or 0))
 end
 
 function D.Clear()

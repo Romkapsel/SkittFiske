@@ -66,6 +66,7 @@ function Session.OnChannelStart(cdb, spellId)
   if not Game.IsFishingSpell(spellId, name) then return end
   ns.Debug.Count("channel")
   if s then s.casts = s.casts + 1 end
+  if ns.active then ns.Debug.BiteStart() end
 end
 
 local lootOpen, moneyBefore, pending

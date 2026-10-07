@@ -32,6 +32,7 @@
 | V6 | Setter agnknappen agnet på stanga (`/use item:ID` + `/use 16`), og leser `GetWeaponEnchantInfo` tiden? | `snapshot.lureOnPole` |
 | V7 | Høres plasket når spillet ikke er i fokus (`Sound_EnableSoundWhenGameIsInBG`)? | Daniel |
 | V8 | Kommer utstyret riktig tilbake, også skjold/off-hand og i kamp? | Daniel |
+| V9 | Sier spillet fra når fisken napper? (Daniel vil at fiskeøyet lyser i nappe-vinduet.) Nappe-lytteren noterer alle hendelser mens duppen er ute; se etter én som alltid kommer like før `>> LOOT_OPENED`. Ventet svar: nei – Blizzard skjuler nappet for addons (anti-bot). | `debug.bite` |
 
 ### Svar
 

@@ -186,6 +186,21 @@ def font(names, size):
     return ImageFont.load_default()
 
 
+def render_glow():
+    """Myk, oransje glød til fiskeøyet (legges over med ADD i spillet): hvit kjerne, oransje ut mot kanten."""
+    s = 128
+    y, x = np.mgrid[0:s, 0:s].astype(np.float32)
+    r = np.sqrt((x - s / 2 + 0.5) ** 2 + (y - s / 2 + 0.5) ** 2) / (s / 2)
+    a = np.clip(1 - r, 0, 1) ** 1.8
+    core = np.clip(1 - r * 3.2, 0, 1)
+    out = np.zeros((s, s, 4), np.float32)
+    out[..., 0] = 255
+    out[..., 1] = 150 + 105 * core
+    out[..., 2] = 40 + 200 * core
+    out[..., 3] = a * 255
+    Image.fromarray(out.astype(np.uint8), "RGBA").save(os.path.join(OUT, "eye_glow.tga"))
+
+
 def preview():
     L = LAYOUT
     x0c, x1c = L["crop"]
@@ -267,6 +282,7 @@ if __name__ == "__main__":
     render_symbols()
     render_bar()
     render_panel()
+    render_glow()
     for old in ("plaque.tga", "button.tga"):
         if os.path.exists(os.path.join(OUT, old)):
             os.remove(os.path.join(OUT, old))

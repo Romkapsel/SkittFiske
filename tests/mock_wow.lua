@@ -1,7 +1,7 @@
 -- En falsk WoW-klient til testene. T holder tilstanden; testene endrer den og fyrer hendelser med Fire().
 T = {
   chat = {}, now = 1000, clock = 1700000000, combat = false, timers = {},
-  handlers = {}, bindings = {}, macros = {}, macroLimit = 120,
+  handlers = {}, allEvents = {}, bindings = {}, macros = {}, macroLimit = 120,
   cvars = { Sound_EnableAllSound = "1", Sound_EnableSFX = "1", Sound_SFXVolume = "0.4", Sound_MusicVolume = "0.6",
             Sound_AmbienceVolume = "0.5", Sound_MasterVolume = "0.8", Sound_EnableSoundWhenGameIsInBG = "0",
             ActionButtonUseKeyDown = "1" },
@@ -45,6 +45,8 @@ local function frame(name, kind)
   function f:HookScript(k, fn) self.hooks[k] = self.hooks[k] or {} table.insert(self.hooks[k], fn) end
   function f:RegisterEvent(e) T.handlers[e] = T.handlers[e] or {} table.insert(T.handlers[e], self) end
   function f:RegisterUnitEvent(e) self:RegisterEvent(e) end
+  function f:RegisterAllEvents() T.allEvents[self] = true end
+  function f:UnregisterAllEvents() T.allEvents[self] = nil end
   function f:Show()
     if T.combat and self.protected then error("ADDON_ACTION_BLOCKED Show " .. tostring(self.name)) end
     self.shown = true
@@ -142,6 +144,7 @@ ERR_FISH_NOT_HOOKED = "No fish are hooked."
 
 function Fire(e, ...)
   for _, f in ipairs(T.handlers[e] or {}) do f.scripts.OnEvent(f, e, ...) end
+  for f in pairs(T.allEvents) do f.scripts.OnEvent(f, e, ...) end
 end
 
 function RunTimers(upTo)
