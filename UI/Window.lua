@@ -70,10 +70,11 @@ local LAYOUT = {
   crop = { 168, 856 },
   title = 104, zone = 144,
   bar = { 358, 166, 300, 28 },           -- x, y, bredde, høyde (der streken var)
-  line2 = 214, pole = 354, lure = 442,   -- Stang og Agn
-  rings = { 568, 204, 40, 46 },          -- x, y, størrelse, avstand
+  summary = 208, value = 226, rows = 250, rowStep = 19,
   list = { 364, 288 },                   -- fangstlinjene: x, bredde
-  summary = 258, value = 276, rows = 298, rowStep = 19,
+  line2 = 334, lineX = 528,              -- Stang, Agn og ringene: y, midten av linja
+  pole = 92, lure = 124,                -- bredden på Stang- og Agn-plassen
+  rings = { 323, 44, 48 },               -- y, størrelse, avstand
   warn = 386,
   report = { 672, 431, 66, 34 },
   close = { 738, 94, 44, 22 },
@@ -82,7 +83,7 @@ local LAYOUT = {
 local S = 0.8 -- enheter per piksel i frame.tga
 local CROP_W = LAYOUT.crop[2] - LAYOUT.crop[1]
 local WIN_W, WIN_H = CROP_W * S, 512 * S
-local RINGS, ROWS, DROP_ROWS = 3, 4, 10
+local RINGS, ROWS, DROP_ROWS = 3, 3, 10
 local CENTER_X = 508 -- alt midtstilt under tittelen, litt til venstre for midten av pergamentet (Daniel)
 
 local function px(v) return v * S end
@@ -107,10 +108,10 @@ local function hideTip() GameTooltip:Hide() end
 
 local function makeRing(i)
   local r = LAYOUT.rings
-  local size = px(r[3])
+  local size = px(r[2])
   local b = CreateFrame("Button", nil, f, "SecureActionButtonTemplate")
   b:SetSize(size, size)
-  at(b, r[1] + (i - 1) * r[4], r[2])
+  at(b, LAYOUT.lineX, r[1]) -- plassen settes av W.LayoutLine
   b:RegisterForClicks(Game.ClickMode()) -- bare én av dem, ellers brukes agnet to ganger
   b:SetAttribute("type", "macro")
   b.glow = b:CreateTexture(nil, "BACKGROUND")
@@ -146,20 +147,35 @@ local function makeRing(i)
   return b
 end
 
-local function makeCheck(x, label)
-  local y = LAYOUT.line2
+local function makeCheck(label)
   local c = {}
   c.box = f:CreateTexture(nil, "ARTWORK")
-  c.box:SetSize(px(21), px(21))
-  at(c.box, x, y)
+  c.box:SetSize(px(23), px(23))
   c.box:SetTexture(M .. "box.tga")
   c.mark = f:CreateTexture(nil, "OVERLAY")
-  c.mark:SetSize(px(21), px(21))
-  at(c.mark, x, y)
-  c.text = ns.Text(f, "GameFontNormalSmall", INK, 13)
-  at(c.text, x + 27, y + 3)
+  c.mark:SetSize(px(23), px(23))
+  c.text = ns.Text(f, "GameFontNormalSmall", INK, 14)
   c.text:SetText(label)
   return c
+end
+
+local function placeCheck(c, x)
+  local y = LAYOUT.line2
+  at(c.box, x, y)
+  at(c.mark, x, y)
+  at(c.text, x + 29, y + 4)
+end
+
+-- Stang, Agn og ringene sentrert på én linje; flyttes bare utenfor kamp (ringene er sikre knapper)
+function W.LayoutLine(n)
+  local L2 = LAYOUT
+  local total = L2.pole + L2.lure + math.max(n, 0) * L2.rings[3]
+  local x = L2.lineX - total / 2
+  placeCheck(checks.pole, x)
+  placeCheck(checks.lure, x + L2.pole)
+  local rx = x + L2.pole + L2.lure
+  for i, b in ipairs(rings) do at(b, rx + (i - 1) * L2.rings[3], L2.rings[1]) end
+  at(noLureFs, rx, L2.line2 + 5)
 end
 
 function W.Create(cdb)
@@ -242,12 +258,12 @@ function W.Create(cdb)
   barText:SetPoint("CENTER", barBg, "CENTER", 0, 0)
 
   -- 2) Stang og Agn, og agn-ringene på samme linje
-  checks.pole = makeCheck(LAYOUT.pole, L.CHECK_POLE)
-  checks.lure = makeCheck(LAYOUT.lure, L.CHECK_LURE)
+  checks.pole = makeCheck(L.CHECK_POLE)
+  checks.lure = makeCheck(L.CHECK_LURE)
   for i = 1, RINGS do rings[i] = makeRing(i) end
   noLureFs = ns.Text(f, "GameFontNormalSmall", FADED, 11)
-  at(noLureFs, LAYOUT.rings[1], LAYOUT.line2 + 4)
   noLureFs:SetText(L.LURE_NONE_IN_BAGS)
+  W.LayoutLine(0)
 
   -- 3) Feltet: fanget, kast, verdi og fangsten med verdi per fisk – oppdateres mens du fisker
   summaryFs = ns.Text(f, "GameFontNormalSmall", FADED, 11)
@@ -371,6 +387,8 @@ function W.RefreshLures()
     end
   end
   noLureFs:SetShown(#lures == 0)
+  -- Uten agn i baggen tar teksten plassen til omtrent tre ringer
+  W.LayoutLine(#lures == 0 and 3 or math.min(#lures, RINGS))
 end
 
 function W.RefreshLure()

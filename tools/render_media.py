@@ -19,10 +19,10 @@ LAYOUT = {
     "crop": (168, 856),
     "title": 104, "zone": 144,
     "bar": (358, 166, 300, 28),
-    "line2": 214, "pole": 354, "lure": 442,
-    "rings": (568, 204, 40, 46),
+    "summary": 208, "value": 226, "rows": 250, "row_step": 19,
     "list": (364, 288),
-    "summary": 258, "value": 276, "rows": 298, "row_step": 19,
+    "line2": 334, "line_x": 528, "pole": 92, "lure": 124,
+    "rings": (323, 44, 48),
     "report": (672, 431, 66, 34),
     "close": (738, 94, 44, 22),
 }
@@ -237,25 +237,27 @@ def preview():
     d.rounded_rectangle([x + 4, y + 4, x + 4 + (bw - 8) * 0.5, y + bh - 4], radius=6, fill=(86, 140, 60))
     img.alpha_composite(barf.resize((bw, bh)), (int(x), int(y)))
     ctext(bx + bw / 2, by + 5, "Fiske 75/150  +25", txt, (255, 250, 235))
-    for x0, t in ((L["pole"], "Stang"), (L["lure"], "Agn  6 min")):
-        b = box.resize((21, 21))
-        img.alpha_composite(b, tuple(int(v) for v in P(x0, L["line2"])))
-        img.alpha_composite(check.resize((21, 21)), tuple(int(v) for v in P(x0, L["line2"])))
-        d.text(P(x0 + 27, L["line2"] + 1), t, font=txt, fill=INK)
-    rx, ry, rs, rstep = L["rings"]
+    ry, rs, rstep = L["rings"]
+    total = L["pole"] + L["lure"] + 3 * rstep
+    x = L["line_x"] - total / 2
+    for x0, t in ((x, "Stang"), (x + L["pole"], "Agn  6 min")):
+        img.alpha_composite(box.resize((23, 23)), tuple(int(v) for v in P(x0, L["line2"])))
+        img.alpha_composite(check.resize((23, 23)), tuple(int(v) for v in P(x0, L["line2"])))
+        d.text(P(x0 + 29, L["line2"] + 2), t, font=txt, fill=INK)
+    rx = x + L["pole"] + L["lure"]
     for i, colr in enumerate(((200, 120, 140), (110, 170, 200), (170, 120, 220))):
-        x, y = P(rx + i * rstep, ry)
-        d.ellipse([x + 5, y + 5, x + rs - 5, y + rs - 5], fill=colr)
-        img.alpha_composite(ring.resize((rs, rs)), (int(x), int(y)))
-        d.text((x + rs - 11, y + rs - 16), str((5, 3, 2)[i]), font=small, fill=(255, 255, 255))
+        x1, y1 = P(rx + i * rstep, ry)
+        d.ellipse([x1 + 5, y1 + 5, x1 + rs - 5, y1 + rs - 5], fill=colr)
+        img.alpha_composite(ring.resize((rs, rs)), (int(x1), int(y1)))
+        d.text((x1 + rs - 11, y1 + rs - 16), str((5, 3, 2)[i]), font=small, fill=(255, 255, 255))
     x0, w = L["list"]
     ctext(508, L["summary"], "Fanget 11  ·  Kast 14 · Slapp unna 1", small, (120, 96, 70))
     ctext(508, L["value"], "Verdi 1g 4s 20c  ·  3g 12s per time", bold, HEAD)
-    for i, (t, v) in enumerate((("6 × Oily Blackmouth", "54s"), ("3 × Raw Longjaw Mud Snapper", "6c"), ("2 × Raw Brilliant Smallfish", "2c"), ("+ 2 til", "4c"))):
+    for i, (t, v) in enumerate((("6 × Oily Blackmouth", "54s"), ("3 × Raw Longjaw Mud Snapper", "6c"), ("+ 3 til", "6c"))):
         y = L["rows"] + i * L["row_step"]
-        if i < 3:
+        if i < 2:
             d.rectangle([P(x0 + 10, y), (P(x0 + 10, y)[0] + 16, P(x0 + 10, y)[1] + 16)], fill=(120, 140, 160))
-        d.text(P(x0 + 32, y + 1), t, font=small, fill=INK if i < 3 else (120, 96, 70))
+        d.text(P(x0 + 32, y + 1), t, font=small, fill=INK if i < 2 else (120, 96, 70))
         vw = d.textlength(v, font=small)
         d.text((P(x0 + w - 10, y)[0] - vw, P(x0, y + 1)[1]), v, font=small, fill=HEAD)
     x, y, w, h = L["report"]
